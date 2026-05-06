@@ -148,6 +148,10 @@ a {
   padding: 60px 0 30px;
 }
 
+#view {
+  min-height: 60vh;
+}
+
 .hero-grid {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
@@ -262,6 +266,69 @@ a {
   padding: 20px;
   border: 1px solid var(--border);
   text-align: center;
+  font-weight: 600;
+}
+
+.auth {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  padding: 50px 0 80px;
+}
+
+.auth-card {
+  width: min(420px, 90vw);
+  background: var(--card);
+  border-radius: 24px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 20px;
+}
+
+.auth-title {
+  font-family: 'Playfair Display', serif;
+  margin: 0 0 8px;
+}
+
+.auth-subtitle {
+  margin: 0;
+  color: var(--muted);
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--bg-ink-soft);
+}
+
+.auth-field input {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  outline: none;
+}
+
+.auth-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(215, 107, 74, 0.2);
+}
+
+.auth-footer {
+  margin: 0;
+  color: var(--muted);
+}
+
+.auth-footer a {
+  color: var(--accent-strong);
   font-weight: 600;
 }
 
