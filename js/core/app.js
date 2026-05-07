@@ -1,5 +1,6 @@
 import { mainLayout } from '../layouts/main.layout.js';
 import { initRouter } from './router.js';
+import { initToast } from '../utils/toast.js';
 
 export const initApp = () => {
   const app = document.getElementById('app');
@@ -8,6 +9,7 @@ export const initApp = () => {
   }
 
   app.innerHTML = mainLayout();
+  initToast();
   initRouter();
 
   const toggle = document.querySelector('.nav-toggle');

@@ -1,3 +1,5 @@
+import { toast } from '../../utils/toast.js';
+
 export const loginPage = () => `
 	<section class="auth">
 		<div class="auth-card">
@@ -55,3 +57,21 @@ export const registerPage = () => `
 		</div>
 	</section>
 `;
+
+export const initAuthPage = (mode) => {
+  const form = document.querySelector('.auth-form');
+  if (!form) {
+    return;
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    if (mode === 'login') {
+      toast.success('Welcome back! You are signed in.');
+      return;
+    }
+
+    toast.success('Account created! Let us start writing.');
+  });
+};

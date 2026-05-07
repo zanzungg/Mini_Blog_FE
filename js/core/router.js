@@ -1,5 +1,9 @@
 import { homePage } from '../modules/home/home.page.js';
-import { loginPage, registerPage } from '../modules/auth/auth.page.js';
+import {
+  initAuthPage,
+  loginPage,
+  registerPage,
+} from '../modules/auth/auth.page.js';
 
 const setActiveLink = (hash) => {
   const links = document.querySelectorAll('.nav-links a');
@@ -18,11 +22,13 @@ const renderView = (hash) => {
 
   if (hash === '#login') {
     view.innerHTML = loginPage();
+    initAuthPage('login');
     return;
   }
 
   if (hash === '#register') {
     view.innerHTML = registerPage();
+    initAuthPage('register');
     return;
   }
 
