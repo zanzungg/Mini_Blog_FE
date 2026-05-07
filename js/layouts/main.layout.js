@@ -11,7 +11,7 @@ export const mainLayout = () => `
 				<div>
 					<h1 class="hero-title">Write, curate, and share stories with a calm rhythm.</h1>
 					<p class="hero-desc">
-						Mini Blog is a clean, focused front-end built with vanilla JS. The home page
+						The home page
 						highlights fresh posts, hand-picked notes, and community signals without noise.
 					</p>
 					<div class="hero-actions">
@@ -20,7 +20,7 @@ export const mainLayout = () => `
 					</div>
 				</div>
 				<article class="hero-card">
-					<span class="hero-meta">Featured Essay</span>
+					<span class="hero-meta">Latest Post</span>
 					<h3>Designing With Light: A Study of Quiet Interfaces</h3>
 					<p>
 						A deep dive into soft palettes, subtle motion, and what makes a UI feel
@@ -31,21 +31,21 @@ export const mainLayout = () => `
 			</div>
 		</section>
 
-		<section id="featured" class="section">
-			<h2 class="section-title">Featured Posts</h2>
+		<section id="latest" class="section">
+			<h2 class="section-title">Latest Posts</h2>
 			<div class="grid-3">
 				<article class="post-card">
-					<span>Field Notes</span>
+					<span>Today</span>
 					<h3>Sketching a Product Journey Map</h3>
 					<p>Organize insights, align teams, and keep the story simple.</p>
 				</article>
 				<article class="post-card">
-					<span>Studio</span>
+					<span>Yesterday</span>
 					<h3>From Wireframe to Editorial Layout</h3>
 					<p>Turn grids into elegant storytelling modules for modern blogs.</p>
 				</article>
 				<article class="post-card">
-					<span>Culture</span>
+					<span>Last Week</span>
 					<h3>The Ritual of Sunday Planning</h3>
 					<p>How small routines keep long projects moving forward.</p>
 				</article>
