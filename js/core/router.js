@@ -1,9 +1,39 @@
 import { homePage } from '../modules/home/home.page.js';
 import {
   initAuthPage,
+  initLogoutPage,
   loginPage,
+  logoutPage,
   registerPage,
 } from '../modules/auth/auth.page.js';
+
+const normalizeHash = (hash) => {
+  if (!hash || hash === '#') {
+    return '#home';
+  }
+
+  if (hash === '#login') {
+    return '#/auth/login';
+  }
+
+  if (hash === '#register') {
+    return '#/auth/register';
+  }
+
+  if (hash === '#auth/login') {
+    return '#/auth/login';
+  }
+
+  if (hash === '#auth/register') {
+    return '#/auth/register';
+  }
+
+  if (hash === '#auth/logout') {
+    return '#/auth/logout';
+  }
+
+  return hash;
+};
 
 const setActiveLink = (hash) => {
   const links = document.querySelectorAll('.nav-links a');
@@ -20,15 +50,21 @@ const renderView = (hash) => {
     return;
   }
 
-  if (hash === '#login') {
+  if (hash === '#/auth/login') {
     view.innerHTML = loginPage();
     initAuthPage('login');
     return;
   }
 
-  if (hash === '#register') {
+  if (hash === '#/auth/register') {
     view.innerHTML = registerPage();
     initAuthPage('register');
+    return;
+  }
+
+  if (hash === '#/auth/logout') {
+    view.innerHTML = logoutPage();
+    initLogoutPage();
     return;
   }
 
@@ -44,7 +80,7 @@ const renderView = (hash) => {
 
 export const initRouter = () => {
   const updateRoute = () => {
-    const hash = window.location.hash || '#home';
+    const hash = normalizeHash(window.location.hash || '#home');
     renderView(hash);
     setActiveLink(hash);
   };
