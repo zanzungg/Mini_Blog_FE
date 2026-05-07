@@ -68,6 +68,15 @@ a {
   gap: 12px;
 }
 
+.auth-user {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--bg-ink-soft);
+}
+
 .auth-link {
   padding: 8px 18px;
   border-radius: 999px;
@@ -75,6 +84,9 @@ a {
   font-weight: 600;
   background: #fff;
   box-shadow: 0 8px 20px rgba(40, 40, 40, 0.08);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -84,6 +96,12 @@ a {
   border-color: var(--accent);
   background: var(--accent);
   color: #fff;
+}
+
+.auth-link--ghost {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--bg-ink-soft);
 }
 
 .auth-link:hover {
@@ -357,6 +375,7 @@ a {
   gap: 12px;
   z-index: 9999;
   width: min(360px, 92vw);
+  pointer-events: none;
 }
 
 .toast {

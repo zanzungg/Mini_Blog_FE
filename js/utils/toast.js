@@ -47,13 +47,12 @@ const removeToastElement = (toast) => {
   }
 
   toast.classList.add('toast--leave');
-  toast.addEventListener(
-    'transitionend',
-    () => {
-      toast.remove();
-    },
-    { once: true }
-  );
+  const handleRemove = () => {
+    toast.remove();
+  };
+
+  toast.addEventListener('animationend', handleRemove, { once: true });
+  toast.addEventListener('transitionend', handleRemove, { once: true });
 };
 
 const pruneToasts = () => {
