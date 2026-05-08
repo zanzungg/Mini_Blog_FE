@@ -1,5 +1,6 @@
 import { toast } from '../../utils/toast.js';
 import { getPosts } from '../post/post.service.js';
+import { getCategories } from '../category/category.service.js';
 
 const escapeHtml = (value = '') =>
   String(value)
@@ -90,9 +91,24 @@ const renderLatestPosts = (posts) => {
     .join('');
 };
 
+const renderCategories = (categories) => {
+  if (!categories.length) {
+    return '<p>No categories available yet.</p>';
+  }
+
+  return categories
+    .map(
+      (category) => `
+        <div class="category">${escapeHtml(category.name)}</div>
+      `
+    )
+    .join('');
+};
+
 export const initHomePage = async () => {
   const latestContainer = document.querySelector('[data-latest-posts]');
   const heroContainer = document.querySelector('[data-hero-post]');
+  const categoryContainer = document.querySelector('[data-category-list]');
   if (!latestContainer) {
     return;
   }
@@ -100,6 +116,9 @@ export const initHomePage = async () => {
   latestContainer.innerHTML = '<p>Loading latest posts...</p>';
   if (heroContainer) {
     heroContainer.innerHTML = renderHeroPost();
+  }
+  if (categoryContainer) {
+    categoryContainer.innerHTML = '<p>Loading categories...</p>';
   }
 
   try {
@@ -113,11 +132,22 @@ export const initHomePage = async () => {
       heroContainer.innerHTML = renderHeroPost(heroPost);
     }
     latestContainer.innerHTML = renderLatestPosts(latestPosts.slice(0, 3));
+
+    if (categoryContainer) {
+      const { items: categories } = await getCategories({
+        page: 1,
+        limit: 10,
+      });
+      categoryContainer.innerHTML = renderCategories(categories);
+    }
   } catch (error) {
     const message = error.details?.message || error.message || 'Request failed';
     latestContainer.innerHTML = '<p>Unable to load latest posts.</p>';
     if (heroContainer) {
       heroContainer.innerHTML = renderHeroPost();
+    }
+    if (categoryContainer) {
+      categoryContainer.innerHTML = '<p>Unable to load categories.</p>';
     }
     toast.error(message);
   }
@@ -156,11 +186,8 @@ export const homePage = () => `
 
   <section id="categories" class="section">
     <h2 class="section-title">Browse Categories</h2>
-    <div class="category-list">
-      <div class="category">Product</div>
-      <div class="category">Design</div>
-      <div class="category">Writing</div>
-      <div class="category">Lifestyle</div>
+    <div class="category-list" data-category-list>
+      <p>Loading categories...</p>
     </div>
   </section>
 `;
