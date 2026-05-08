@@ -1,15 +1,25 @@
 import { toast } from '../../utils/toast.js';
-import { getPosts } from './post.service.js';
+import { getPosts, getPostById } from './post.service.js';
 import { getCategories } from '../category/category.service.js';
 import { initModal, openModal } from '../../components/modal.js';
 
-let postCache = new Map();
 let isPostsBound = false;
 let postsState = {
   page: 1,
   limit: 10,
   keyword: '',
   categoryId: '',
+};
+let pendingCategorySlug = '';
+
+const getHashParams = () => {
+  const hash = window.location.hash || '';
+  const queryIndex = hash.indexOf('?');
+  if (queryIndex === -1) {
+    return new URLSearchParams();
+  }
+
+  return new URLSearchParams(hash.slice(queryIndex + 1));
 };
 
 const escapeHtml = (value = '') =>
@@ -53,6 +63,39 @@ const createExcerpt = (content = '', maxLength = 140) => {
 const renderPostContent = (content = '') =>
   escapeHtml(content).replace(/\n/g, '<br />');
 
+const renderComments = (comments = [], depth = 0) => {
+  if (!comments.length) {
+    return '';
+  }
+
+  return `
+    <div class="modal__comment-list">
+      ${comments
+        .map((comment) => {
+          const commenter =
+            comment.user?.name || comment.user?.email || 'Anonymous';
+          const repliesMarkup = renderComments(
+            comment.replies || [],
+            depth + 1
+          );
+
+          return `
+            <div class="modal__comment" data-depth="${depth}">
+              <p class="modal__comment-meta">${escapeHtml(
+                commenter
+              )} · ${escapeHtml(formatDate(comment.createdAt))}</p>
+              <p class="modal__comment-body">${renderPostContent(
+                comment.content
+              )}</p>
+              ${repliesMarkup ? `<div class="modal__comment-children">${repliesMarkup}</div>` : ''}
+            </div>
+          `;
+        })
+        .join('')}
+    </div>
+  `;
+};
+
 const renderPostModalContent = (post) => {
   if (!post) {
     return '<p>Post not found.</p>';
@@ -67,16 +110,28 @@ const renderPostModalContent = (post) => {
         : 'Draft'
       : null;
 
+  const comments = post.comments || [];
+  const commentsMarkup = comments.length
+    ? `
+      <div class="modal__divider"></div>
+      <div class="modal__comments">
+        <h4 class="modal__section-title">Comments (${comments.length})</h4>
+        ${renderComments(comments)}
+      </div>
+    `
+    : '';
+
   return `
-		<div class="modal__meta">
-			<span>${escapeHtml(category)}</span>
-			<span>${escapeHtml(formatDate(post.createdAt))}</span>
-			<span>By ${escapeHtml(author)}</span>
-			${statusLabel ? `<span>${escapeHtml(statusLabel)}</span>` : ''}
-		</div>
-		<h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
-		<div class="modal__body">${renderPostContent(post.content)}</div>
-	`;
+    <div class="modal__meta">
+      <span>${escapeHtml(category)}</span>
+      <span>${escapeHtml(formatDate(post.createdAt))}</span>
+      <span>By ${escapeHtml(author)}</span>
+      ${statusLabel ? `<span>${escapeHtml(statusLabel)}</span>` : ''}
+    </div>
+    <h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
+    <div class="modal__body">${renderPostContent(post.content)}</div>
+    ${commentsMarkup}
+  `;
 };
 
 const renderPosts = (posts) => {
@@ -91,13 +146,15 @@ const renderPosts = (posts) => {
         post.author?.name || post.author?.email || 'Unknown author';
 
       return `
-				<article class="post-card post-card--clickable" data-post-id="${post.id}" role="button" tabindex="0">
-					<span>${escapeHtml(category)} · ${escapeHtml(formatDate(post.createdAt))}</span>
-					<h3>${escapeHtml(post.title)}</h3>
-					<p>${escapeHtml(createExcerpt(post.content))}</p>
-					<p class="hero-meta">By ${escapeHtml(author)}</p>
-				</article>
-			`;
+        <article class="post-card post-card--clickable" data-post-id="${post.id}" role="button" tabindex="0">
+          <span>${escapeHtml(category)} · ${escapeHtml(
+            formatDate(post.createdAt)
+          )}</span>
+          <h3>${escapeHtml(post.title)}</h3>
+          <p>${escapeHtml(createExcerpt(post.content))}</p>
+          <p class="hero-meta">By ${escapeHtml(author)}</p>
+        </article>
+      `;
     })
     .join('');
 };
@@ -112,26 +169,26 @@ const renderPagination = (meta) => {
   const pages = Array.from({ length: total }, (_, index) => index + 1);
 
   return `
-		<button class="btn btn-ghost" data-page="${current - 1}" ${
+    <button class="btn btn-ghost" data-page="${current - 1}" ${
       current === 1 ? 'disabled' : ''
     }>
-			Prev
-		</button>
-		${pages
+      Prev
+    </button>
+    ${pages
       .map(
         (page) => `
-					<button class="btn ${page === current ? 'btn-primary' : 'btn-ghost'}" data-page="${page}">
-						${page}
-					</button>
-				`
+          <button class="btn ${page === current ? 'btn-primary' : 'btn-ghost'}" data-page="${page}">
+            ${page}
+          </button>
+        `
       )
       .join('')}
-		<button class="btn btn-ghost" data-page="${current + 1}" ${
+    <button class="btn btn-ghost" data-page="${current + 1}" ${
       current === total ? 'disabled' : ''
     }>
-			Next
-		</button>
-	`;
+      Next
+    </button>
+  `;
 };
 
 const renderCategoryOptions = (categories) => {
@@ -174,7 +231,6 @@ const updatePosts = async () => {
     }
 
     const { items, meta } = await getPosts(params);
-    postCache = new Map(items.map((post) => [post.id, post]));
     listEl.innerHTML = renderPosts(items);
     paginationEl.innerHTML = renderPagination(meta);
   } catch (error) {
@@ -190,42 +246,57 @@ const bindPostsInteractions = () => {
     return;
   }
 
-  const searchForm = document.querySelector('[data-post-search-form]');
-  const searchInput = document.querySelector('[data-post-search]');
-  const categorySelect = document.querySelector('[data-post-category]');
-  const paginationEl = document.querySelector('[data-post-pagination]');
+  document.addEventListener('submit', (event) => {
+    const form = event.target.closest('[data-post-search-form]');
+    if (!form) {
+      return;
+    }
 
-  if (searchForm && searchInput) {
-    searchForm.addEventListener('submit', (event) => {
-      event.preventDefault();
-      postsState = {
-        ...postsState,
-        page: 1,
-        keyword: searchInput.value.trim(),
-      };
-      updatePosts();
-    });
-  }
+    const input = form.querySelector('[data-post-search]');
+    if (!input) {
+      return;
+    }
 
-  if (categorySelect) {
-    categorySelect.addEventListener('change', () => {
-      postsState = {
-        ...postsState,
-        page: 1,
-        categoryId: categorySelect.value,
-      };
-      updatePosts();
-    });
-  }
+    event.preventDefault();
+    postsState = {
+      ...postsState,
+      page: 1,
+      keyword: input.value.trim(),
+    };
+    if (!postsState.categoryId) {
+      window.location.hash = '#/posts';
+    }
+    updatePosts();
+  });
 
-  if (paginationEl) {
-    paginationEl.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-page]');
-      if (!button || button.disabled) {
+  document.addEventListener('change', (event) => {
+    const select = event.target.closest('[data-post-category]');
+    if (!select) {
+      return;
+    }
+
+    const selectedSlug = select.selectedOptions?.[0]?.dataset?.slug || '';
+    postsState = {
+      ...postsState,
+      page: 1,
+      categoryId: select.value,
+    };
+    if (selectedSlug) {
+      window.location.hash = `#/posts?category=${selectedSlug}`;
+    } else {
+      window.location.hash = '#/posts';
+    }
+    updatePosts();
+  });
+
+  document.addEventListener('click', async (event) => {
+    const pageButton = event.target.closest('[data-page]');
+    if (pageButton && pageButton.closest('[data-post-pagination]')) {
+      if (pageButton.disabled) {
         return;
       }
 
-      const nextPage = Number(button.getAttribute('data-page'));
+      const nextPage = Number(pageButton.getAttribute('data-page'));
       if (!Number.isFinite(nextPage) || nextPage < 1) {
         return;
       }
@@ -234,26 +305,47 @@ const bindPostsInteractions = () => {
         ...postsState,
         page: nextPage,
       };
+      if (postsState.categoryId) {
+        const categorySelect = document.querySelector('[data-post-category]');
+        const selectedSlug =
+          categorySelect?.selectedOptions?.[0]?.dataset?.slug || '';
+        if (selectedSlug) {
+          window.location.hash = `#/posts?category=${selectedSlug}`;
+        }
+      }
       updatePosts();
-    });
-  }
+      return;
+    }
 
-  document.addEventListener('click', (event) => {
     const trigger = event.target.closest('[data-post-id]');
     if (!trigger) {
       return;
     }
 
     const id = Number(trigger.getAttribute('data-post-id'));
-    const post = postCache.get(id);
-    if (!post) {
+    if (!Number.isFinite(id)) {
       return;
     }
 
-    openModal(renderPostModalContent(post));
+    openModal('<p>Loading post details...</p>');
+
+    try {
+      const post = await getPostById(id);
+      if (!post) {
+        openModal('<p>Post not found.</p>');
+        return;
+      }
+
+      openModal(renderPostModalContent(post));
+    } catch (error) {
+      const message =
+        error.details?.message || error.message || 'Request failed';
+      openModal('<p>Unable to load post details.</p>');
+      toast.error(message);
+    }
   });
 
-  document.addEventListener('keydown', (event) => {
+  document.addEventListener('keydown', async (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') {
       return;
     }
@@ -265,12 +357,26 @@ const bindPostsInteractions = () => {
 
     event.preventDefault();
     const id = Number(trigger.getAttribute('data-post-id'));
-    const post = postCache.get(id);
-    if (!post) {
+    if (!Number.isFinite(id)) {
       return;
     }
 
-    openModal(renderPostModalContent(post));
+    openModal('<p>Loading post details...</p>');
+
+    try {
+      const post = await getPostById(id);
+      if (!post) {
+        openModal('<p>Post not found.</p>');
+        return;
+      }
+
+      openModal(renderPostModalContent(post));
+    } catch (error) {
+      const message =
+        error.details?.message || error.message || 'Request failed';
+      openModal('<p>Unable to load post details.</p>');
+      toast.error(message);
+    }
   });
 
   isPostsBound = true;
@@ -280,6 +386,15 @@ export const initPostsPage = async () => {
   initModal();
   bindPostsInteractions();
 
+  const params = getHashParams();
+  const categoryParam = params.get('category');
+  pendingCategorySlug = categoryParam ? String(categoryParam) : '';
+  postsState = {
+    ...postsState,
+    page: 1,
+    categoryId: '',
+  };
+
   const categorySelect = document.querySelector('[data-post-category]');
   if (categorySelect) {
     categorySelect.innerHTML =
@@ -288,6 +403,18 @@ export const initPostsPage = async () => {
     try {
       const { items } = await getCategories({ page: 1, limit: 100 });
       categorySelect.innerHTML = renderCategoryOptions(items);
+      if (pendingCategorySlug) {
+        const matched = items.find(
+          (category) => category.slug === pendingCategorySlug
+        );
+        if (matched) {
+          postsState = {
+            ...postsState,
+            categoryId: String(matched.id),
+          };
+          categorySelect.value = postsState.categoryId;
+        }
+      }
     } catch (error) {
       categorySelect.innerHTML = '<option value="">All categories</option>';
     }
@@ -297,31 +424,31 @@ export const initPostsPage = async () => {
 };
 
 export const postsPage = () => `
-	<section class="section posts">
-		<div class="posts-header">
-			<div>
-				<h2 class="section-title">All Posts</h2>
-				<p class="posts-subtitle">Search and filter stories from the community.</p>
-			</div>
-			<div class="posts-actions">
-				<form class="posts-search" data-post-search-form>
-					<input
-						class="posts-search__input"
-						type="search"
-						placeholder="Search posts..."
-						aria-label="Search posts"
-						data-post-search
-					/>
-					<button class="btn btn-primary" type="submit">Search</button>
-				</form>
-				<select class="posts-select" data-post-category aria-label="Filter by category">
-					<option value="">Loading categories...</option>
-				</select>
-			</div>
-		</div>
-		<div class="posts-grid" data-post-list>
-			<p>Loading posts...</p>
-		</div>
-		<div class="pagination" data-post-pagination></div>
-	</section>
+  <section class="section posts">
+    <div class="posts-header">
+      <div>
+        <h2 class="section-title">All Posts</h2>
+        <p class="posts-subtitle">Search and filter stories from the community.</p>
+      </div>
+      <div class="posts-actions">
+        <form class="posts-search" data-post-search-form>
+          <input
+            class="posts-search__input"
+            type="search"
+            placeholder="Search posts..."
+            aria-label="Search posts"
+            data-post-search
+          />
+          <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+        <select class="posts-select" data-post-category aria-label="Filter by category">
+          <option value="">Loading categories...</option>
+        </select>
+      </div>
+    </div>
+    <div class="posts-grid" data-post-list>
+      <p>Loading posts...</p>
+    </div>
+    <div class="pagination" data-post-pagination></div>
+  </section>
 `;

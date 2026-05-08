@@ -378,6 +378,12 @@ a {
   border: 1px solid var(--border);
   text-align: center;
   font-weight: 600;
+  display: block;
+  cursor: pointer;
+}
+
+.category--link {
+  color: inherit;
 }
 
 .auth {
@@ -591,6 +597,57 @@ a {
   font-size: 15px;
   line-height: 1.7;
   color: var(--bg-ink-soft);
+}
+
+.modal__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+.modal__comments {
+  display: grid;
+  gap: 12px;
+}
+
+.modal__section-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.modal__comment-list {
+  display: grid;
+  gap: 12px;
+}
+
+.modal__comment {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fbfaf8;
+}
+
+.modal__comment-children {
+  margin-top: 12px;
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 2px solid var(--border);
+  display: grid;
+  gap: 12px;
+}
+
+.modal__comment-meta {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.modal__comment-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .modal-open {
