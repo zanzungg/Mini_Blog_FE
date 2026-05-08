@@ -3,6 +3,7 @@ export const navbar = () => `
 		<div class="container nav-inner">
 			<div class="nav-links">
 				<a href="#home" class="active">Home</a>
+				<a href="#/posts">Posts</a>
 				<a href="#latest">Latest</a>
 				<a href="#categories">Categories</a>
 			</div>
