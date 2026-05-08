@@ -37,15 +37,17 @@ const normalizeHash = (hash) => {
 };
 
 const setActiveLink = (hash) => {
+  const baseHash = hash.split('?')[0];
   const links = document.querySelectorAll('.nav-links a');
 
   links.forEach((link) => {
-    const isActive = link.getAttribute('href') === hash;
+    const isActive = link.getAttribute('href') === baseHash;
     link.classList.toggle('active', isActive);
   });
 };
 
 const renderView = (hash) => {
+  const baseHash = hash.split('?')[0];
   const view = document.getElementById('view');
   if (!view) {
     return;
@@ -69,7 +71,7 @@ const renderView = (hash) => {
     return;
   }
 
-  if (hash === '#/posts') {
+  if (baseHash === '#/posts') {
     view.innerHTML = postsPage();
     initPostsPage();
     return;
@@ -78,8 +80,8 @@ const renderView = (hash) => {
   view.innerHTML = homePage();
   initHomePage();
 
-  if (hash !== '#home') {
-    const section = document.querySelector(hash);
+  if (baseHash !== '#home') {
+    const section = document.querySelector(baseHash);
     if (section) {
       section.scrollIntoView({ behavior: 'smooth' });
     }

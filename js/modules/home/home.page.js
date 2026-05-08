@@ -1,9 +1,8 @@
 import { toast } from '../../utils/toast.js';
-import { getPosts } from '../post/post.service.js';
+import { getPosts, getPostById } from '../post/post.service.js';
 import { getCategories } from '../category/category.service.js';
 import { initModal, openModal } from '../../components/modal.js';
 
-let postCache = new Map();
 let isHomeBound = false;
 
 const escapeHtml = (value = '') =>
@@ -47,6 +46,39 @@ const createExcerpt = (content = '', maxLength = 120) => {
 const renderPostContent = (content = '') =>
   escapeHtml(content).replace(/\n/g, '<br />');
 
+const renderComments = (comments = [], depth = 0) => {
+  if (!comments.length) {
+    return '';
+  }
+
+  return `
+    <div class="modal__comment-list">
+      ${comments
+        .map((comment) => {
+          const commenter =
+            comment.user?.name || comment.user?.email || 'Anonymous';
+          const repliesMarkup = renderComments(
+            comment.replies || [],
+            depth + 1
+          );
+
+          return `
+            <div class="modal__comment" data-depth="${depth}">
+              <p class="modal__comment-meta">${escapeHtml(
+                commenter
+              )} · ${escapeHtml(formatDate(comment.createdAt))}</p>
+              <p class="modal__comment-body">${renderPostContent(
+                comment.content
+              )}</p>
+              ${repliesMarkup ? `<div class="modal__comment-children">${repliesMarkup}</div>` : ''}
+            </div>
+          `;
+        })
+        .join('')}
+    </div>
+  `;
+};
+
 const renderPostModalContent = (post) => {
   if (!post) {
     return '<p>Post not found.</p>';
@@ -61,6 +93,17 @@ const renderPostModalContent = (post) => {
         : 'Draft'
       : null;
 
+  const comments = post.comments || [];
+  const commentsMarkup = comments.length
+    ? `
+      <div class="modal__divider"></div>
+      <div class="modal__comments">
+        <h4 class="modal__section-title">Comments (${comments.length})</h4>
+        ${renderComments(comments)}
+      </div>
+    `
+    : '';
+
   return `
     <div class="modal__meta">
       <span>${escapeHtml(category)}</span>
@@ -70,6 +113,7 @@ const renderPostModalContent = (post) => {
     </div>
     <h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
     <div class="modal__body">${renderPostContent(post.content)}</div>
+    ${commentsMarkup}
   `;
 };
 
@@ -132,7 +176,7 @@ const renderCategories = (categories) => {
   return categories
     .map(
       (category) => `
-        <div class="category">${escapeHtml(category.name)}</div>
+        <a class="category category--link" href="#/posts?category=${encodeURIComponent(category.slug)}">${escapeHtml(category.name)}</a>
       `
     )
     .join('');
@@ -143,7 +187,7 @@ const bindHomeInteractions = () => {
     return;
   }
 
-  const handlePostTrigger = (event) => {
+  const handlePostTrigger = async (event) => {
     const trigger = event.target.closest('[data-post-id]');
     if (!trigger) {
       return;
@@ -154,12 +198,22 @@ const bindHomeInteractions = () => {
       return;
     }
 
-    const post = postCache.get(id);
-    if (!post) {
-      return;
-    }
+    openModal('<p>Loading post details...</p>');
 
-    openModal(renderPostModalContent(post));
+    try {
+      const post = await getPostById(id);
+      if (!post) {
+        openModal('<p>Post not found.</p>');
+        return;
+      }
+
+      openModal(renderPostModalContent(post));
+    } catch (error) {
+      const message =
+        error.details?.message || error.message || 'Request failed';
+      openModal('<p>Unable to load post details.</p>');
+      toast.error(message);
+    }
   };
 
   document.addEventListener('click', (event) => {
@@ -211,8 +265,6 @@ export const initHomePage = async () => {
       limit: 4,
       status: 'published',
     });
-
-    postCache = new Map(items.map((post) => [post.id, post]));
 
     const [heroPost, ...latestPosts] = items;
     if (heroContainer) {

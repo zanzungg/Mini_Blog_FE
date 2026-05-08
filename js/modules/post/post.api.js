@@ -33,3 +33,5 @@ const buildPostsQuery = (params = {}) => {
 
 export const getPostsRequest = (params = {}) =>
   requestJson(`/posts${buildPostsQuery(params)}`);
+
+export const getPostByIdRequest = (id) => requestJson(`/posts/${id}`);

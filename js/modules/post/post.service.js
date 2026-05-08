@@ -1,4 +1,5 @@
 import { getPostsRequest } from './post.api.js';
+import { getPostByIdRequest } from './post.api.js';
 
 const ensureSuccess = (payload, fallback) => {
   if (payload?.status === 'success') {
@@ -18,4 +19,10 @@ export const getPosts = async (params = {}) => {
     items: payload.data || [],
     meta: payload.meta || null,
   };
+};
+
+export const getPostById = async (id) => {
+  const { data } = await getPostByIdRequest(id);
+  const payload = ensureSuccess(data, 'Unable to load post details');
+  return payload.post || null;
 };
