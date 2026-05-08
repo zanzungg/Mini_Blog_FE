@@ -250,7 +250,7 @@ export const homePage = () => `
           highlights fresh posts, hand-picked notes, and community signals without noise.
         </p>
         <div class="hero-actions">
-          <button class="btn btn-primary">Start Reading</button>
+          <a class="btn btn-primary" href="#/posts">Start Reading</a>
           <button class="btn btn-ghost">Submit a Story</button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { homePage, initHomePage } from '../modules/home/home.page.js';
+import { postsPage, initPostsPage } from '../modules/post/post.page.js';
 import {
   initAuthPage,
   initLogoutPage,
@@ -65,6 +66,12 @@ const renderView = (hash) => {
   if (hash === '#/auth/logout') {
     view.innerHTML = logoutPage();
     initLogoutPage();
+    return;
+  }
+
+  if (hash === '#/posts') {
+    view.innerHTML = postsPage();
+    initPostsPage();
     return;
   }
 
