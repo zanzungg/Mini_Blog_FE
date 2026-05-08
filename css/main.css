@@ -230,6 +230,18 @@ a {
   box-shadow: var(--shadow);
 }
 
+.hero-card--clickable {
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.hero-card--clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 50px rgba(28, 28, 28, 0.18);
+}
+
 .hero-card h3 {
   margin: 0 0 10px;
 }
@@ -263,6 +275,18 @@ a {
   box-shadow: 0 10px 24px rgba(30, 30, 30, 0.08);
   display: grid;
   gap: 12px;
+}
+
+.post-card--clickable {
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.post-card--clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 30px rgba(30, 30, 30, 0.14);
 }
 
 .post-card span {
@@ -427,6 +451,81 @@ a {
 .toast__message {
   font-size: 14px;
   line-height: 1.4;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9990;
+}
+
+.modal--open {
+  display: flex;
+}
+
+.modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 18, 18, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.modal__content {
+  position: relative;
+  z-index: 1;
+  width: min(720px, 92vw);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--card);
+  border-radius: 24px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 16px;
+}
+
+.modal__close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal__title {
+  margin: 0;
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+}
+
+.modal__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.modal__body {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--bg-ink-soft);
+}
+
+.modal-open {
+  overflow: hidden;
 }
 
 @keyframes toast-in {
