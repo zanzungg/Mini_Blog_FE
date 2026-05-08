@@ -1,4 +1,4 @@
-import { homePage } from '../modules/home/home.page.js';
+import { homePage, initHomePage } from '../modules/home/home.page.js';
 import {
   initAuthPage,
   initLogoutPage,
@@ -69,6 +69,7 @@ const renderView = (hash) => {
   }
 
   view.innerHTML = homePage();
+  initHomePage();
 
   if (hash !== '#home') {
     const section = document.querySelector(hash);

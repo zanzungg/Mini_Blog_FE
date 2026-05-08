@@ -1,6 +1,6 @@
-import { API_BASE_URL } from './constants.js';
+import { getApiBaseUrl } from './constants.js';
 
-export const buildApiUrl = (path) => new URL(path, API_BASE_URL).toString();
+export const buildApiUrl = (path) => new URL(path, getApiBaseUrl()).toString();
 
 export const requestJson = async (path, options = {}) => {
   const response = await fetch(buildApiUrl(path), {

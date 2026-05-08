@@ -1,2 +1,5 @@
-export const API_BASE_URL = 'http://127.0.0.1:3000';
+export const getApiBaseUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  return apiUrl || window.location.origin;
+};
 export const AUTH_STORAGE_KEY = 'mini_blog_auth';
