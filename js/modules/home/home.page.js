@@ -1,6 +1,10 @@
 import { toast } from '../../utils/toast.js';
 import { getPosts } from '../post/post.service.js';
 import { getCategories } from '../category/category.service.js';
+import { initModal, openModal } from '../../components/modal.js';
+
+let postCache = new Map();
+let isHomeBound = false;
 
 const escapeHtml = (value = '') =>
   String(value)
@@ -40,6 +44,35 @@ const createExcerpt = (content = '', maxLength = 120) => {
   return `${normalized.slice(0, maxLength).trim()}...`;
 };
 
+const renderPostContent = (content = '') =>
+  escapeHtml(content).replace(/\n/g, '<br />');
+
+const renderPostModalContent = (post) => {
+  if (!post) {
+    return '<p>Post not found.</p>';
+  }
+
+  const author = post.author?.name || post.author?.email || 'Unknown author';
+  const category = post.category?.name || 'General';
+  const statusLabel =
+    typeof post.published === 'boolean'
+      ? post.published
+        ? 'Published'
+        : 'Draft'
+      : null;
+
+  return `
+    <div class="modal__meta">
+      <span>${escapeHtml(category)}</span>
+      <span>${escapeHtml(formatDate(post.createdAt))}</span>
+      <span>By ${escapeHtml(author)}</span>
+      ${statusLabel ? `<span>${escapeHtml(statusLabel)}</span>` : ''}
+    </div>
+    <h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
+    <div class="modal__body">${renderPostContent(post.content)}</div>
+  `;
+};
+
 const renderHeroPost = (post) => {
   if (!post) {
     return `
@@ -55,7 +88,7 @@ const renderHeroPost = (post) => {
   const category = post.category?.name || 'General';
 
   return `
-    <article class="hero-card">
+    <article class="hero-card hero-card--clickable" data-post-id="${post.id}" role="button" tabindex="0">
       <span class="hero-meta">Latest Post · ${escapeHtml(category)}</span>
       <h3>${escapeHtml(post.title)}</h3>
       <p>${escapeHtml(createExcerpt(post.content, 180))}</p>
@@ -78,7 +111,7 @@ const renderLatestPosts = (posts) => {
         post.author?.name || post.author?.email || 'Unknown author';
 
       return `
-        <article class="post-card">
+        <article class="post-card post-card--clickable" data-post-id="${post.id}" role="button" tabindex="0">
           <span>${escapeHtml(category)} · ${escapeHtml(
             formatDate(post.createdAt)
           )}</span>
@@ -105,6 +138,54 @@ const renderCategories = (categories) => {
     .join('');
 };
 
+const bindHomeInteractions = () => {
+  if (isHomeBound) {
+    return;
+  }
+
+  const handlePostTrigger = (event) => {
+    const trigger = event.target.closest('[data-post-id]');
+    if (!trigger) {
+      return;
+    }
+
+    const id = Number(trigger.getAttribute('data-post-id'));
+    if (!Number.isFinite(id)) {
+      return;
+    }
+
+    const post = postCache.get(id);
+    if (!post) {
+      return;
+    }
+
+    openModal(renderPostModalContent(post));
+  };
+
+  document.addEventListener('click', (event) => {
+    const isPostTrigger = event.target.closest('[data-post-id]');
+    if (isPostTrigger) {
+      handlePostTrigger(event);
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    const isPostTrigger = event.target.closest('[data-post-id]');
+    if (!isPostTrigger) {
+      return;
+    }
+
+    event.preventDefault();
+    handlePostTrigger(event);
+  });
+
+  isHomeBound = true;
+};
+
 export const initHomePage = async () => {
   const latestContainer = document.querySelector('[data-latest-posts]');
   const heroContainer = document.querySelector('[data-hero-post]');
@@ -121,12 +202,18 @@ export const initHomePage = async () => {
     categoryContainer.innerHTML = '<p>Loading categories...</p>';
   }
 
+  initModal();
+  bindHomeInteractions();
+
   try {
     const { items } = await getPosts({
       page: 1,
       limit: 4,
       status: 'published',
     });
+
+    postCache = new Map(items.map((post) => [post.id, post]));
+
     const [heroPost, ...latestPosts] = items;
     if (heroContainer) {
       heroContainer.innerHTML = renderHeroPost(heroPost);
