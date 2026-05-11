@@ -1,4 +1,9 @@
-import { loginRequest, registerRequest, logoutRequest } from './auth.api.js';
+import {
+  loginRequest,
+  registerRequest,
+  logoutRequest,
+  getMeRequest,
+} from './auth.api.js';
 import {
   clearAuthState,
   getAuthState,
@@ -32,12 +37,17 @@ export const login = async (credentials) => {
   const payload = ensureSuccess(data, 'Login failed');
 
   setAuthState({
-    user: payload.user,
     accessToken: payload.accessToken,
     refreshToken: payload.refreshToken,
   });
 
-  return payload.user;
+  const user = payload.user || (await fetchCurrentUser());
+
+  setAuthState({
+    user,
+  });
+
+  return user;
 };
 
 export const register = async (formData) => {
@@ -45,12 +55,48 @@ export const register = async (formData) => {
   const payload = ensureSuccess(data, 'Register failed');
 
   setAuthState({
-    user: payload.user,
     accessToken: payload.accessToken,
     refreshToken: payload.refreshToken,
   });
 
-  return payload.user;
+  const user = payload.user || (await fetchCurrentUser());
+
+  setAuthState({
+    user,
+  });
+
+  return user;
+};
+
+export const fetchCurrentUser = async () => {
+  const { accessToken } = getAuthState();
+  if (!accessToken) {
+    const error = new Error('Missing access token');
+    error.details = { message: 'Missing access token' };
+    throw error;
+  }
+
+  const { data } = await getMeRequest(accessToken);
+  const payload = ensureSuccess(data, 'Unable to fetch user profile');
+  return payload.user || null;
+};
+
+export const hydrateAuthUser = async () => {
+  const { accessToken, user } = getAuthState();
+  if (!accessToken || user) {
+    return user || null;
+  }
+
+  try {
+    const currentUser = await fetchCurrentUser();
+    if (currentUser) {
+      setAuthState({ user: currentUser });
+    }
+    return currentUser;
+  } catch (error) {
+    clearAuthState();
+    throw error;
+  }
 };
 
 export const logout = async () => {

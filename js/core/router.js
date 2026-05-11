@@ -1,6 +1,12 @@
 import { homePage, initHomePage } from '../modules/home/home.page.js';
 import { postsPage, initPostsPage } from '../modules/post/post.page.js';
 import {
+  myPostsPage,
+  initMyPostsPage,
+  myProfilePage,
+  initMyProfilePage,
+} from '../modules/user/user.page.js';
+import {
   initAuthPage,
   initLogoutPage,
   loginPage,
@@ -74,6 +80,18 @@ const renderView = (hash) => {
   if (baseHash === '#/posts') {
     view.innerHTML = postsPage();
     initPostsPage();
+    return;
+  }
+
+  if (baseHash === '#/user/profile') {
+    view.innerHTML = myProfilePage();
+    initMyProfilePage();
+    return;
+  }
+
+  if (baseHash === '#/user/posts') {
+    view.innerHTML = myPostsPage();
+    initMyPostsPage();
     return;
   }
 
