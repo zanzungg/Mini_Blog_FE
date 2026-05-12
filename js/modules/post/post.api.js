@@ -66,3 +66,9 @@ export const publishPostRequest = (id, accessToken) =>
     method: 'POST',
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
   });
+
+export const deletePostRequest = (id, accessToken) =>
+  requestJson(`/posts/${id}`, {
+    method: 'DELETE',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  });

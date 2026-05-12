@@ -16,6 +16,7 @@ import {
   createPost,
   updatePost,
   publishPost,
+  deletePost,
 } from '../post/post.service.js';
 
 let isProfileBound = false;
@@ -102,18 +103,27 @@ const renderComments = (comments = [], depth = 0) => {
   `;
 };
 
-const renderDraftActions = (post) => {
-  if (post?.published !== false) {
-    return '';
-  }
+const renderPostActions = (post) => {
+  if (!post) return '';
+
+  const isDraft = post.published === false;
 
   return `
     <div class="modal-actions">
-      <button class="btn btn-ghost" type="button" data-post-edit="${post.id}">
-        Edit
-      </button>
-      <button class="btn btn-primary" type="button" data-post-publish="${post.id}">
-        Publish
+      ${
+        isDraft
+          ? `
+        <button class="btn btn-ghost" type="button" data-post-edit="${post.id}">
+          Edit
+        </button>
+        <button class="btn btn-primary" type="button" data-post-publish="${post.id}">
+          Publish
+        </button>
+      `
+          : ''
+      }
+      <button class="btn btn-danger" type="button" data-post-delete="${post.id}">
+        Delete
       </button>
     </div>
   `;
@@ -159,7 +169,7 @@ const renderPostModalContent = (post) => {
     </div>
     <h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
     <div class="modal__body">${renderPostContent(post.content)}</div>
-    ${renderDraftActions(post)}
+    ${renderPostActions(post)}
     ${commentsMarkup}
   `;
 };
@@ -457,6 +467,40 @@ const bindMyPostsInteractions = () => {
           toast.error(message);
           publishTrigger.disabled = false;
           publishTrigger.textContent = 'Publish';
+        });
+      return;
+    }
+
+    // Delete post
+    const deleteTrigger = event.target.closest('[data-post-delete]');
+    if (deleteTrigger) {
+      event.stopPropagation();
+      const postId = Number(deleteTrigger.getAttribute('data-post-delete'));
+
+      const confirmed = await openConfirm({
+        title: 'Delete this post?',
+        message:
+          'This action cannot be undone. The post will be permanently deleted.',
+      });
+
+      if (!confirmed) return;
+
+      deleteTrigger.disabled = true;
+      deleteTrigger.textContent = 'Deleting...';
+
+      deletePost(postId)
+        .then(() => {
+          toast.success('Post deleted.');
+          closeModal();
+          myPostsState = { ...myPostsState, page: 1 };
+          updateMyPosts();
+        })
+        .catch((error) => {
+          const message =
+            error.details?.message || error.message || 'Delete failed';
+          toast.error(message);
+          deleteTrigger.disabled = false;
+          deleteTrigger.textContent = 'Delete';
         });
       return;
     }
