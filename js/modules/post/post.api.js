@@ -35,3 +35,34 @@ export const getPostsRequest = (params = {}) =>
   requestJson(`/posts${buildPostsQuery(params)}`);
 
 export const getPostByIdRequest = (id) => requestJson(`/posts/${id}`);
+
+export const getMyPostsRequest = (params = {}, accessToken) =>
+  requestJson(`/posts/me${buildPostsQuery(params)}`, {
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  });
+
+export const createPostRequest = (payload, accessToken) =>
+  requestJson('/posts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+export const updatePostRequest = (id, payload, accessToken) =>
+  requestJson(`/posts/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+export const publishPostRequest = (id, accessToken) =>
+  requestJson(`/posts/${id}/publish`, {
+    method: 'POST',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  });

@@ -1,7 +1,15 @@
 import { toast } from '../../utils/toast.js';
 import { getAuthState, setAuthState } from '../../core/store.js';
 import { initModal, openModal, closeModal } from '../../components/modal.js';
+import { renderPostForm } from '../../components/post.form.js';
 import { updateUserProfile } from './user.service.js';
+import {
+  getPostById,
+  getMyPosts,
+  createPost,
+  updatePost,
+  publishPost,
+} from '../post/post.service.js';
 
 let isProfileBound = false;
 let isMyPostsBound = false;
@@ -12,53 +20,6 @@ let myPostsState = {
   keyword: '',
   status: '',
 };
-
-let userPosts = [
-  {
-    id: 1,
-    title: 'Finding a steady writing rhythm',
-    content:
-      'I track ideas in small notebooks, then shape them into weekly drafts. The rhythm keeps the work light and consistent.',
-    category: 'Writing',
-    published: true,
-    createdAt: '2026-02-10T09:30:00.000Z',
-  },
-  {
-    id: 2,
-    title: 'Draft: Morning rituals for focus',
-    content:
-      'Still sketching the structure. This will highlight three rituals I use to focus before I write.',
-    category: 'Habits',
-    published: false,
-    createdAt: '2026-02-18T12:00:00.000Z',
-  },
-  {
-    id: 3,
-    title: 'Designing a gentle reading list',
-    content:
-      'A lightweight method for sorting articles so the ones that matter stay visible.',
-    category: 'Productivity',
-    published: true,
-    createdAt: '2026-03-04T15:45:00.000Z',
-  },
-  {
-    id: 4,
-    title: 'Draft: Notes on slow publishing',
-    content: 'A placeholder while I gather more examples from the community.',
-    category: 'Publishing',
-    published: false,
-    createdAt: '2026-03-18T08:20:00.000Z',
-  },
-  {
-    id: 5,
-    title: 'Editing without burning out',
-    content:
-      'My short checklist for editing quickly, keeping energy for the next story.',
-    category: 'Writing',
-    published: true,
-    createdAt: '2026-04-02T10:05:00.000Z',
-  },
-];
 
 const escapeHtml = (value = '') =>
   String(value)
@@ -96,6 +57,104 @@ const createExcerpt = (content = '', maxLength = 140) => {
   }
 
   return `${normalized.slice(0, maxLength).trim()}...`;
+};
+
+const renderPostContent = (content = '') =>
+  escapeHtml(content).replace(/\n/g, '<br />');
+
+const renderComments = (comments = [], depth = 0) => {
+  if (!comments.length) {
+    return '';
+  }
+
+  return `
+    <div class="modal__comment-list">
+      ${comments
+        .map((comment) => {
+          const commenter =
+            comment.user?.name || comment.user?.email || 'Anonymous';
+          const repliesMarkup = renderComments(
+            comment.replies || [],
+            depth + 1
+          );
+
+          return `
+            <div class="modal__comment" data-depth="${depth}">
+              <p class="modal__comment-meta">${escapeHtml(
+                commenter
+              )} · ${escapeHtml(formatDate(comment.createdAt))}</p>
+              <p class="modal__comment-body">${renderPostContent(
+                comment.content
+              )}</p>
+              ${repliesMarkup ? `<div class="modal__comment-children">${repliesMarkup}</div>` : ''}
+            </div>
+          `;
+        })
+        .join('')}
+    </div>
+  `;
+};
+
+const renderDraftActions = (post) => {
+  if (post?.published !== false) {
+    return '';
+  }
+
+  return `
+    <div class="modal-actions">
+      <button class="btn btn-ghost" type="button" data-post-edit="${post.id}">
+        Edit
+      </button>
+      <button class="btn btn-primary" type="button" data-post-publish="${post.id}">
+        Publish
+      </button>
+    </div>
+  `;
+};
+
+const resolveCategoryLabel = (post) =>
+  post.category?.name || post.category || 'General';
+
+const resolveAuthorLabel = (post) =>
+  post.author?.name || post.author?.email || 'You';
+
+const renderPostModalContent = (post) => {
+  if (!post) {
+    return '<p>Post not found.</p>';
+  }
+
+  const category = resolveCategoryLabel(post);
+  const author = resolveAuthorLabel(post);
+  const statusLabel =
+    typeof post.published === 'boolean'
+      ? post.published
+        ? 'Published'
+        : 'Draft'
+      : null;
+
+  const comments = post.comments || [];
+  const commentsMarkup = comments.length
+    ? `
+      <div class="modal__divider"></div>
+      <div class="modal__comments">
+        <h4 class="modal__section-title">Comments (${comments.length})</h4>
+        ${renderComments(comments)}
+      </div>
+    `
+    : '';
+
+  return `
+    <div class="modal__meta">
+      <span>${escapeHtml(category)}</span>
+      <span>${escapeHtml(formatDate(post.createdAt))}</span>
+      <span>By ${escapeHtml(author)}</span>
+      ${statusLabel ? `<span>${escapeHtml(statusLabel)}</span>` : ''}
+    </div>
+    <h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
+    <div class="modal__body">${renderPostContent(post.content)}</div>
+    ${renderDraftActions(post)}
+    ${commentsMarkup}
+  `;
 };
 
 const renderProfileCard = () => {
@@ -153,150 +212,84 @@ const renderMyPostsList = (posts) => {
       const statusClass = post.published
         ? 'status-pill--success'
         : 'status-pill--draft';
+      const category = resolveCategoryLabel(post);
 
       return `
-				<article class="post-card">
-					<div class="post-card__meta">
-						<span>${escapeHtml(post.category || 'General')} · ${escapeHtml(
-              formatDate(post.createdAt)
-            )}</span>
-						<span class="status-pill ${statusClass}">${statusLabel}</span>
-					</div>
-					<h3>${escapeHtml(post.title)}</h3>
-					<p>${escapeHtml(createExcerpt(post.content))}</p>
-				</article>
-			`;
+        <article class="post-card post-card--clickable" data-post-id="${post.id}" role="button" tabindex="0">
+          <div class="post-card__meta">
+            <span>${escapeHtml(category)} · ${escapeHtml(formatDate(post.createdAt))}</span>
+            <span class="status-pill ${statusClass}">${statusLabel}</span>
+          </div>
+          <h3>${escapeHtml(post.title)}</h3>
+          <p>${escapeHtml(createExcerpt(post.content))}</p>
+        </article>
+      `;
     })
     .join('');
 };
 
 const renderMyPostsPagination = (meta) => {
-  if (!meta || meta.totalPages <= 1) {
-    return '';
-  }
+  if (!meta || meta.totalPages <= 1) return '';
 
   const current = meta.page || 1;
   const total = meta.totalPages || 1;
-  const pages = Array.from({ length: total }, (_, index) => index + 1);
+  const pages = Array.from({ length: total }, (_, i) => i + 1);
 
   return `
-		<button class="btn btn-ghost" data-my-posts-page="${current - 1}" ${
-      current === 1 ? 'disabled' : ''
-    }>
-			Prev
-		</button>
-		${pages
+    <button class="btn btn-ghost" data-my-posts-page="${current - 1}" ${current === 1 ? 'disabled' : ''}>Prev</button>
+    ${pages
       .map(
         (page) => `
-					<button class="btn ${
-            page === current ? 'btn-primary' : 'btn-ghost'
-          }" data-my-posts-page="${page}">
-						${page}
-					</button>
-				`
+        <button class="btn ${page === current ? 'btn-primary' : 'btn-ghost'}" data-my-posts-page="${page}">
+          ${page}
+        </button>
+      `
       )
       .join('')}
-		<button class="btn btn-ghost" data-my-posts-page="${current + 1}" ${
-      current === total ? 'disabled' : ''
-    }>
-			Next
-		</button>
-	`;
+    <button class="btn btn-ghost" data-my-posts-page="${current + 1}" ${current === total ? 'disabled' : ''}>Next</button>
+  `;
 };
 
-const getFilteredPosts = () => {
-  const keyword = myPostsState.keyword.toLowerCase();
-
-  return userPosts.filter((post) => {
-    const matchesKeyword = keyword
-      ? post.title.toLowerCase().includes(keyword) ||
-        post.content.toLowerCase().includes(keyword)
-      : true;
-
-    const matchesStatus = myPostsState.status
-      ? myPostsState.status === 'published'
-        ? post.published
-        : !post.published
-      : true;
-
-    return matchesKeyword && matchesStatus;
-  });
-};
-
-const getPagedPosts = () => {
-  const filtered = getFilteredPosts();
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filtered.length / myPostsState.limit)
-  );
-  const currentPage = Math.min(myPostsState.page, totalPages);
-  const start = (currentPage - 1) * myPostsState.limit;
-
-  return {
-    items: filtered.slice(start, start + myPostsState.limit),
-    meta: {
-      page: currentPage,
-      totalPages,
-      totalItems: filtered.length,
-    },
-  };
-};
-
-const updateMyPosts = () => {
+const updateMyPosts = async () => {
   const listEl = document.querySelector('[data-my-posts-list]');
   const paginationEl = document.querySelector('[data-my-posts-pagination]');
 
-  if (!listEl || !paginationEl) {
-    return;
-  }
+  if (!listEl || !paginationEl) return;
 
-  const { items, meta } = getPagedPosts();
-  listEl.innerHTML = renderMyPostsList(items);
-  paginationEl.innerHTML = renderMyPostsPagination(meta);
+  listEl.innerHTML = '<p>Loading your posts...</p>';
+  paginationEl.innerHTML = '';
+
+  try {
+    const params = {
+      page: myPostsState.page,
+      limit: myPostsState.limit,
+    };
+
+    if (myPostsState.keyword) {
+      params.keyword = myPostsState.keyword;
+    }
+
+    if (myPostsState.status) {
+      params.status = myPostsState.status;
+    }
+
+    const { items, meta } = await getMyPosts(params);
+    listEl.innerHTML = renderMyPostsList(items);
+    paginationEl.innerHTML = renderMyPostsPagination(meta);
+  } catch (error) {
+    const message = error.details?.message || error.message || 'Request failed';
+    listEl.innerHTML = '<p>Unable to load your posts.</p>';
+    paginationEl.innerHTML = '';
+    toast.error(message);
+  }
 };
 
-const renderCreatePostForm = () => `
-	<div class="modal__meta">
-		<span>Create Post</span>
-	</div>
-	<h3 id="modal-title" class="modal__title">New Post</h3>
-	<form class="modal-form" data-create-post-form>
-		<label class="modal-field">
-			<span>Title</span>
-			<input type="text" name="title" placeholder="Post title" required />
-		</label>
-		<label class="modal-field">
-			<span>Category</span>
-			<input type="text" name="category" placeholder="Category" required />
-		</label>
-		<label class="modal-field">
-			<span>Status</span>
-			<select name="status" required>
-				<option value="published">Published</option>
-				<option value="draft">Draft</option>
-			</select>
-		</label>
-		<label class="modal-field">
-			<span>Content</span>
-			<textarea name="content" rows="6" placeholder="Write your story" required></textarea>
-		</label>
-		<div class="modal-actions">
-			<button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
-			<button class="btn btn-primary" type="submit">Create post</button>
-		</div>
-	</form>
-`;
-
 const bindProfileInteractions = () => {
-  if (isProfileBound) {
-    return;
-  }
+  if (isProfileBound) return;
 
   document.addEventListener('submit', (event) => {
     const form = event.target.closest('[data-profile-form]');
-    if (!form) {
-      return;
-    }
+    if (!form) return;
 
     event.preventDefault();
     const submitButton = form.querySelector('button[type="submit"]');
@@ -308,22 +301,17 @@ const bindProfileInteractions = () => {
       toast.error('Please sign in to update your profile.');
       return;
     }
-
     if (!name) {
       toast.error('Name is required.');
       return;
     }
-
     if (!user.id) {
       toast.error('User id is missing.');
       return;
     }
 
     const setLoading = (isLoading) => {
-      if (!submitButton) {
-        return;
-      }
-
+      if (!submitButton) return;
       submitButton.disabled = isLoading;
       submitButton.textContent = isLoading ? 'Saving...' : 'Save changes';
     };
@@ -336,14 +324,7 @@ const bindProfileInteractions = () => {
           toast.error('Profile update returned no data.');
           return;
         }
-
-        setAuthState({
-          user: {
-            ...user,
-            ...updatedUser,
-          },
-        });
-
+        setAuthState({ user: { ...user, ...updatedUser } });
         toast.success('Profile updated.');
       })
       .catch((error) => {
@@ -351,118 +332,183 @@ const bindProfileInteractions = () => {
           error.details?.message || error.message || 'Update failed';
         toast.error(message);
       })
-      .finally(() => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
   });
 
   isProfileBound = true;
 };
 
 const bindMyPostsInteractions = () => {
-  if (isMyPostsBound) {
-    return;
-  }
+  if (isMyPostsBound) return;
 
+  // Mở modal xem chi tiết post
+  const handlePostTrigger = async (event) => {
+    const trigger = event.target.closest('[data-post-id]');
+    if (!trigger) return;
+
+    const id = Number(trigger.getAttribute('data-post-id'));
+    if (!Number.isFinite(id)) return;
+
+    openModal('<p>Loading post details...</p>');
+
+    try {
+      const post = await getPostById(id);
+      if (!post) {
+        openModal('<p>Post not found.</p>');
+        return;
+      }
+      openModal(renderPostModalContent(post));
+    } catch (error) {
+      const message =
+        error.details?.message || error.message || 'Request failed';
+      openModal('<p>Unable to load post details.</p>');
+      toast.error(message);
+    }
+  };
+
+  // Search
   document.addEventListener('submit', (event) => {
     const form = event.target.closest('[data-my-posts-search-form]');
-    if (!form) {
-      return;
-    }
+    if (!form) return;
 
     event.preventDefault();
     const input = form.querySelector('[data-my-posts-search]');
-    if (!input) {
-      return;
-    }
+    if (!input) return;
 
-    myPostsState = {
-      ...myPostsState,
-      page: 1,
-      keyword: input.value.trim(),
-    };
-
+    myPostsState = { ...myPostsState, page: 1, keyword: input.value.trim() };
     updateMyPosts();
   });
 
+  // Filter status
   document.addEventListener('change', (event) => {
     const select = event.target.closest('[data-my-posts-status]');
-    if (!select) {
-      return;
-    }
+    if (!select) return;
 
-    myPostsState = {
-      ...myPostsState,
-      page: 1,
-      status: select.value,
-    };
-
+    myPostsState = { ...myPostsState, page: 1, status: select.value };
     updateMyPosts();
   });
 
+  // Click: pagination / create / edit / publish / open post
   document.addEventListener('click', (event) => {
+    // Pagination
     const pageButton = event.target.closest('[data-my-posts-page]');
-    if (pageButton && pageButton.closest('[data-my-posts-pagination]')) {
-      if (pageButton.disabled) {
-        return;
-      }
-
+    if (pageButton?.closest('[data-my-posts-pagination]')) {
+      if (pageButton.disabled) return;
       const nextPage = Number(pageButton.getAttribute('data-my-posts-page'));
-      if (!Number.isFinite(nextPage) || nextPage < 1) {
-        return;
-      }
-
-      myPostsState = {
-        ...myPostsState,
-        page: nextPage,
-      };
-
+      if (!Number.isFinite(nextPage) || nextPage < 1) return;
+      myPostsState = { ...myPostsState, page: nextPage };
       updateMyPosts();
       return;
     }
 
-    const createTrigger = event.target.closest('[data-create-post]');
-    if (createTrigger) {
-      openModal(renderCreatePostForm());
-    }
-  });
-
-  document.addEventListener('submit', (event) => {
-    const form = event.target.closest('[data-create-post-form]');
-    if (!form) {
+    // Create post
+    if (event.target.closest('[data-create-post]')) {
+      openModal(renderPostForm({ mode: 'create' }));
       return;
     }
 
+    // Edit draft
+    const editTrigger = event.target.closest('[data-post-edit]');
+    if (editTrigger) {
+      const postId = Number(editTrigger.getAttribute('data-post-edit'));
+      // Mở modal edit — load dữ liệu từ API
+      getPostById(postId)
+        .then((post) => {
+          if (!post) {
+            toast.error('Post not found.');
+            return;
+          }
+          openModal(renderPostForm({ mode: 'edit', post }));
+        })
+        .catch(() => toast.error('Unable to load post for editing.'));
+      return;
+    }
+
+    // Publish draft
+    const publishTrigger = event.target.closest('[data-post-publish]');
+    if (publishTrigger) {
+      const postId = Number(publishTrigger.getAttribute('data-post-publish'));
+      publishTrigger.disabled = true;
+      publishTrigger.textContent = 'Publishing...';
+
+      publishPost(postId)
+        .then(() => {
+          toast.success('Post published!');
+          closeModal();
+          myPostsState = { ...myPostsState, page: 1 };
+          updateMyPosts();
+        })
+        .catch((error) => {
+          const message =
+            error.details?.message || error.message || 'Publish failed';
+          toast.error(message);
+          publishTrigger.disabled = false;
+          publishTrigger.textContent = 'Publish';
+        });
+      return;
+    }
+
+    // Open post detail
+    if (event.target.closest('[data-post-id]')) {
+      handlePostTrigger(event);
+    }
+  });
+
+  // Keyboard: open post detail
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const trigger = event.target.closest('[data-post-id]');
+    if (!trigger) return;
     event.preventDefault();
+    handlePostTrigger(event);
+  });
+
+  // Submit post form (create / edit)
+  document.addEventListener('submit', (event) => {
+    const form = event.target.closest('[data-post-form]');
+    if (!form) return;
+
+    event.preventDefault();
+
+    const mode = form.dataset.mode;
+    const postId = Number(form.dataset.postId);
     const formData = new FormData(form);
     const title = String(formData.get('title') || '').trim();
-    const category = String(formData.get('category') || '').trim();
-    const status = String(formData.get('status') || 'draft');
     const content = String(formData.get('content') || '').trim();
+    const categoryId = Number(formData.get('category') || '') || undefined;
 
-    if (!title || !category || !content) {
+    if (!title || !content) {
       toast.error('Please fill in all required fields.');
       return;
     }
 
-    const newPost = {
-      id: Date.now(),
-      title,
-      category,
-      content,
-      published: status === 'published',
-      createdAt: new Date().toISOString(),
+    const submitButton = form.querySelector('button[type="submit"]');
+    const setLoading = (isLoading) => {
+      if (!submitButton) return;
+      submitButton.disabled = isLoading;
+      submitButton.textContent = isLoading ? 'Saving...' : 'Save';
     };
 
-    userPosts = [newPost, ...userPosts];
-    myPostsState = {
-      ...myPostsState,
-      page: 1,
-    };
+    setLoading(true);
 
-    closeModal();
-    updateMyPosts();
-    toast.success('Post created locally.');
+    const action =
+      mode === 'create'
+        ? createPost({ title, content, categoryId })
+        : updatePost(postId, { title, content, categoryId });
+
+    action
+      .then(() => {
+        toast.success(mode === 'create' ? 'Post created!' : 'Post updated!');
+        myPostsState = { ...myPostsState, page: 1 };
+        closeModal();
+        updateMyPosts();
+      })
+      .catch((error) => {
+        const message =
+          error.details?.message || error.message || 'Save failed';
+        toast.error(message);
+      })
+      .finally(() => setLoading(false));
   });
 
   isMyPostsBound = true;
@@ -486,49 +532,47 @@ export const myPostsPage = () => {
 
   if (!isAuthenticated || !user) {
     return `
-			<section class="auth">
-				<div class="auth-card">
-					<div>
-						<h2 class="auth-title">Sign in to manage your posts</h2>
-						<p class="auth-subtitle">Create, edit, and publish your stories after logging in.</p>
-					</div>
-					<a class="btn btn-primary" href="#/auth/login">Go to login</a>
-				</div>
-			</section>
-		`;
+      <section class="auth">
+        <div class="auth-card">
+          <div>
+            <h2 class="auth-title">Sign in to manage your posts</h2>
+            <p class="auth-subtitle">Create, edit, and publish your stories after logging in.</p>
+          </div>
+          <a class="btn btn-primary" href="#/auth/login">Go to login</a>
+        </div>
+      </section>
+    `;
   }
 
   return `
-		<section class="section my-posts">
-			<div class="posts-header">
-				<div>
-					<h2 class="section-title">My Posts</h2>
-					<p class="posts-subtitle">Manage drafts, published posts, and new ideas.</p>
-				</div>
-				<div class="posts-actions">
-					<form class="posts-search" data-my-posts-search-form>
-						<input
-							class="posts-search__input"
-							type="search"
-							placeholder="Search your posts"
-							data-my-posts-search
-						/>
-						<button class="btn btn-ghost" type="submit">Search</button>
-					</form>
-					<select class="posts-select" data-my-posts-status>
-						<option value="">All status</option>
-						<option value="published">Published</option>
-						<option value="draft">Draft</option>
-					</select>
-					<button class="btn btn-primary" type="button" data-create-post>
-						Create Post
-					</button>
-				</div>
-			</div>
-			<div class="posts-grid" data-my-posts-list>
-				<p>Loading your posts...</p>
-			</div>
-			<div class="pagination" data-my-posts-pagination></div>
-		</section>
-	`;
+    <section class="section my-posts">
+      <div class="posts-header">
+        <div>
+          <h2 class="section-title">My Posts</h2>
+          <p class="posts-subtitle">Manage drafts, published posts, and new ideas.</p>
+        </div>
+        <div class="posts-actions">
+          <form class="posts-search" data-my-posts-search-form>
+            <input
+              class="posts-search__input"
+              type="search"
+              placeholder="Search your posts"
+              data-my-posts-search
+            />
+            <button class="btn btn-ghost" type="submit">Search</button>
+          </form>
+          <select class="posts-select" data-my-posts-status>
+            <option value="">All status</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+          </select>
+          <button class="btn btn-primary" type="button" data-create-post>Create Post</button>
+        </div>
+      </div>
+      <div class="posts-grid" data-my-posts-list>
+        <p>Loading your posts...</p>
+      </div>
+      <div class="pagination" data-my-posts-pagination></div>
+    </section>
+  `;
 };
