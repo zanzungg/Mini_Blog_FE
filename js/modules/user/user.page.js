@@ -1,7 +1,14 @@
 import { toast } from '../../utils/toast.js';
 import { getAuthState, setAuthState } from '../../core/store.js';
 import { initModal, openModal, closeModal } from '../../components/modal.js';
-import { renderPostForm } from '../../components/post.form.js';
+import {
+  initConfirmModal,
+  openConfirm,
+} from '../../components/modal_confirm.js';
+import {
+  renderPostForm,
+  initPostFormCategories,
+} from '../../components/post.form.js';
 import { updateUserProfile } from './user.service.js';
 import {
   getPostById,
@@ -339,24 +346,24 @@ const bindProfileInteractions = () => {
 };
 
 const bindMyPostsInteractions = () => {
+  let _cachedPost = null;
   if (isMyPostsBound) return;
 
   // Mở modal xem chi tiết post
-  const handlePostTrigger = async (event) => {
-    const trigger = event.target.closest('[data-post-id]');
-    if (!trigger) return;
-
-    const id = Number(trigger.getAttribute('data-post-id'));
-    if (!Number.isFinite(id)) return;
+  const handlePostTrigger = async (postId) => {
+    if (!Number.isFinite(postId)) return;
 
     openModal('<p>Loading post details...</p>');
 
     try {
-      const post = await getPostById(id);
+      const post = await getPostById(postId);
+
       if (!post) {
         openModal('<p>Post not found.</p>');
         return;
       }
+
+      _cachedPost = post;
       openModal(renderPostModalContent(post));
     } catch (error) {
       const message =
@@ -389,7 +396,7 @@ const bindMyPostsInteractions = () => {
   });
 
   // Click: pagination / create / edit / publish / open post
-  document.addEventListener('click', (event) => {
+  document.addEventListener('click', async (event) => {
     // Pagination
     const pageButton = event.target.closest('[data-my-posts-page]');
     if (pageButton?.closest('[data-my-posts-pagination]')) {
@@ -404,30 +411,36 @@ const bindMyPostsInteractions = () => {
     // Create post
     if (event.target.closest('[data-create-post]')) {
       openModal(renderPostForm({ mode: 'create' }));
+      initPostFormCategories(null); // load categories vào dropdown
       return;
     }
 
     // Edit draft
     const editTrigger = event.target.closest('[data-post-edit]');
     if (editTrigger) {
-      const postId = Number(editTrigger.getAttribute('data-post-edit'));
-      // Mở modal edit — load dữ liệu từ API
-      getPostById(postId)
-        .then((post) => {
-          if (!post) {
-            toast.error('Post not found.');
-            return;
-          }
-          openModal(renderPostForm({ mode: 'edit', post }));
-        })
-        .catch(() => toast.error('Unable to load post for editing.'));
+      event.stopPropagation();
+      if (!_cachedPost) {
+        toast.error('Post data not available.');
+        return;
+      }
+      openModal(renderPostForm({ mode: 'edit', post: _cachedPost }));
+      initPostFormCategories(_cachedPost.categoryId ?? null);
       return;
     }
 
     // Publish draft
     const publishTrigger = event.target.closest('[data-post-publish]');
     if (publishTrigger) {
+      event.stopPropagation();
       const postId = Number(publishTrigger.getAttribute('data-post-publish'));
+
+      const confirmed = await openConfirm({
+        title: 'Publish this post?',
+        message: 'Once published, the post cannot be edited. Are you sure?',
+      });
+
+      if (!confirmed) return;
+
       publishTrigger.disabled = true;
       publishTrigger.textContent = 'Publishing...';
 
@@ -449,8 +462,17 @@ const bindMyPostsInteractions = () => {
     }
 
     // Open post detail
-    if (event.target.closest('[data-post-id]')) {
-      handlePostTrigger(event);
+    const postTrigger = event.target.closest('[data-post-id]');
+
+    if (postTrigger) {
+      // Ignore clicks inside modal
+      if (event.target.closest('[data-modal]')) {
+        return;
+      }
+
+      const postId = Number(postTrigger.dataset.postId);
+
+      handlePostTrigger(postId);
     }
   });
 
@@ -459,8 +481,10 @@ const bindMyPostsInteractions = () => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     const trigger = event.target.closest('[data-post-id]');
     if (!trigger) return;
+    if (event.target.closest('[data-modal]')) return;
     event.preventDefault();
-    handlePostTrigger(event);
+    const postId = Number(trigger.dataset.postId);
+    handlePostTrigger(postId);
   });
 
   // Submit post form (create / edit)
@@ -475,10 +499,12 @@ const bindMyPostsInteractions = () => {
     const formData = new FormData(form);
     const title = String(formData.get('title') || '').trim();
     const content = String(formData.get('content') || '').trim();
-    const categoryId = Number(formData.get('category') || '') || undefined;
+
+    const rawCategory = formData.get('categoryId');
+    const categoryId = rawCategory ? Number(rawCategory) : undefined;
 
     if (!title || !content) {
-      toast.error('Please fill in all required fields.');
+      toast.error('Please fill in title and content.');
       return;
     }
 
@@ -494,7 +520,11 @@ const bindMyPostsInteractions = () => {
     const action =
       mode === 'create'
         ? createPost({ title, content, categoryId })
-        : updatePost(postId, { title, content, categoryId });
+        : updatePost(postId, {
+            title,
+            content,
+            categoryId: categoryId ?? null,
+          });
 
     action
       .then(() => {
@@ -521,6 +551,7 @@ export const initMyProfilePage = () => {
 
 export const initMyPostsPage = () => {
   initModal();
+  initConfirmModal();
   bindMyPostsInteractions();
   updateMyPosts();
 };

@@ -1,3 +1,5 @@
+import { getCategories } from '../modules/category/category.service.js';
+
 const escapeHtml = (value = '') =>
   String(value)
     .replace(/&/g, '&amp;')
@@ -18,8 +20,8 @@ export const renderPostForm = ({ mode = 'create', post = null } = {}) => {
       ${isEdit ? 'Update Post' : 'New Post'}
     </h3>
 
-    <form 
-      class="modal-form" 
+    <form
+      class="modal-form"
       data-post-form
       data-mode="${mode}"
       ${isEdit ? `data-post-id="${post.id}"` : ''}
@@ -37,38 +39,13 @@ export const renderPostForm = ({ mode = 'create', post = null } = {}) => {
 
       <label class="modal-field">
         <span>Category</span>
-        <input
-          type="text"
-          name="category"
-          placeholder="Category"
-          value="${escapeHtml(post?.category || '')}"
-          required
-        />
-      </label>
-
-      <label class="modal-field">
-        <span>Status</span>
-
-        <select name="status" required>
-          <option 
-            value="published"
-            ${post?.published ? 'selected' : ''}
-          >
-            Published
-          </option>
-
-          <option
-            value="draft"
-            ${post?.published === false ? 'selected' : ''}
-          >
-            Draft
-          </option>
+        <select name="categoryId" data-post-form-category>
+          <option value="">Loading categories...</option>
         </select>
       </label>
 
       <label class="modal-field">
         <span>Content</span>
-
         <textarea
           name="content"
           rows="6"
@@ -78,18 +55,36 @@ export const renderPostForm = ({ mode = 'create', post = null } = {}) => {
       </label>
 
       <div class="modal-actions">
-        <button
-          class="btn btn-ghost"
-          type="button"
-          data-modal-close
-        >
+        <button class="btn btn-ghost" type="button" data-modal-close>
           Cancel
         </button>
-
         <button class="btn btn-primary" type="submit">
           ${isEdit ? 'Update post' : 'Create post'}
         </button>
       </div>
     </form>
   `;
+};
+
+export const initPostFormCategories = async (currentCategoryId = null) => {
+  const select = document.querySelector('[data-post-form-category]');
+  if (!select) return;
+
+  try {
+    const { items } = await getCategories({ page: 1, limit: 100 });
+
+    const options = [
+      '<option value="">No category</option>',
+      ...items.map(
+        (cat) =>
+          `<option value="${cat.id}" ${Number(currentCategoryId) === cat.id ? 'selected' : ''}>
+            ${escapeHtml(cat.name)}
+          </option>`
+      ),
+    ].join('');
+
+    select.innerHTML = options;
+  } catch {
+    select.innerHTML = '<option value="">Unable to load categories</option>';
+  }
 };

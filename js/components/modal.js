@@ -49,8 +49,7 @@ export const initModal = () => {
   }
 
   document.addEventListener('click', (event) => {
-    const closeTrigger = event.target.closest('[data-modal-close]');
-    if (closeTrigger) {
+    if (event.target.matches('[data-modal-close]')) {
       closeModal();
     }
   });
