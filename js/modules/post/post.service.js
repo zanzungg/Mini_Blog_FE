@@ -5,6 +5,7 @@ import {
   createPostRequest,
   updatePostRequest,
   publishPostRequest,
+  deletePostRequest,
 } from './post.api.js';
 import { getAuthState } from '../../core/store.js';
 
@@ -64,4 +65,11 @@ export const publishPost = async (id) => {
   const { data } = await publishPostRequest(id, accessToken);
   const result = ensureSuccess(data, 'Unable to publish post');
   return result.post || null;
+};
+
+export const deletePost = async (id) => {
+  const { accessToken } = getAuthState();
+  const { data } = await deletePostRequest(id, accessToken);
+  const result = ensureSuccess(data, 'Unable to delete post');
+  return result.success || false;
 };

@@ -6,7 +6,7 @@ import { initModal, openModal } from '../../components/modal.js';
 let isPostsBound = false;
 let postsState = {
   page: 1,
-  limit: 10,
+  limit: 6,
   keyword: '',
   categoryId: '',
 };
