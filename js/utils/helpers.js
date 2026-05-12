@@ -2,7 +2,10 @@ import { getApiBaseUrl } from './constants.js';
 
 export const buildApiUrl = (path) => new URL(path, getApiBaseUrl()).toString();
 
-export const requestJson = async (path, options = {}) => {
+let _isRefreshing = false;
+let _refreshPromise = null;
+
+const doFetch = async (path, options = {}) => {
   const response = await fetch(buildApiUrl(path), {
     ...options,
     headers: {
@@ -21,4 +24,48 @@ export const requestJson = async (path, options = {}) => {
 
   const data = await response.json();
   return { data, status: response.status };
+};
+
+export const requestJson = async (path, options = {}) => {
+  const result = await doFetch(path, options);
+
+  if (result.status !== 401) {
+    return result;
+  }
+
+  if (path.includes('/auth/refresh') || path.includes('/auth/login')) {
+    return result;
+  }
+
+  if (!_isRefreshing) {
+    _isRefreshing = true;
+    _refreshPromise = import('../modules/auth/auth.service.js')
+      .then(({ refreshAccessToken }) => refreshAccessToken())
+      .finally(() => {
+        _isRefreshing = false;
+        _refreshPromise = null;
+      });
+  }
+
+  try {
+    const newAccessToken = await _refreshPromise;
+
+    const retryOptions = {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${newAccessToken}`,
+      },
+    };
+
+    return doFetch(path, retryOptions);
+  } catch {
+    const { clearAuthState } = await import('../core/store.js');
+    clearAuthState();
+    window.location.hash = '#/auth/login';
+
+    const error = new Error('Session expired. Please sign in again.');
+    error.statusCode = 401;
+    throw error;
+  }
 };

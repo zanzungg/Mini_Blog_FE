@@ -22,3 +22,9 @@ export const getMeRequest = (accessToken) =>
   requestJson('/auth/me', {
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
   });
+
+export const refreshTokenRequest = (payload) =>
+  requestJson('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
