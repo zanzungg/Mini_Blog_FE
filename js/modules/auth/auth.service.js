@@ -3,6 +3,7 @@ import {
   registerRequest,
   logoutRequest,
   getMeRequest,
+  refreshTokenRequest,
 } from './auth.api.js';
 import {
   clearAuthState,
@@ -117,4 +118,26 @@ export const logout = async () => {
   } finally {
     clearAuthState();
   }
+};
+
+export const refreshAccessToken = async () => {
+  const { refreshToken } = getAuthState();
+
+  if (!refreshToken) {
+    clearAuthState();
+    const error = new Error('No refresh token available');
+    error.details = { message: 'No refresh token available' };
+    throw error;
+  }
+
+  const { data } = await refreshTokenRequest({ refreshToken });
+  const payload = ensureSuccess(data, 'Unable to refresh token');
+
+  setAuthState({
+    accessToken: payload.accessToken,
+    refreshToken: payload.refreshToken,
+    ...(payload.user ? { user: payload.user } : {}),
+  });
+
+  return payload.accessToken;
 };
