@@ -11,15 +11,15 @@ const renderAuthActions = (state) => {
 			<div class="auth-dropdown" data-auth-dropdown>
 				<a href="#/user/profile">My Profile</a>
 				<a href="#/user/posts">My Posts</a>
-				<a href="#/auth/logout">Logout</a>
+				<a href="#/logout">Logout</a>
 			</div>
 		</div>
 	`;
   }
 
   return `
-		<a class="auth-link" href="#/auth/login">Login</a>
-		<a class="auth-link auth-link--primary" href="#/auth/register">Register</a>
+		<a class="auth-link" href="#/login">Login</a>
+		<a class="auth-link auth-link--primary" href="#/register">Register</a>
 	`;
 };
 

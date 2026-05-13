@@ -41,7 +41,10 @@ const refreshCommentList = async (postId, getCommentsFn) => {
   }
 };
 
+let _getCommentsFn = null;
+
 export const bindCommentInteractions = (getCommentsFn) => {
+  _getCommentsFn = getCommentsFn;
   if (_isBound) return;
 
   initConfirmModal();
@@ -89,7 +92,7 @@ export const bindCommentInteractions = (getCommentsFn) => {
         textarea.value = '';
       }
 
-      await refreshCommentList(postId, getCommentsFn);
+      await refreshCommentList(postId, _getCommentsFn);
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Failed to post comment';
@@ -109,7 +112,7 @@ export const bindCommentInteractions = (getCommentsFn) => {
       event.stopImmediatePropagation();
       closeModal();
       setTimeout(() => {
-        window.location.hash = '#/auth/login';
+        window.location.hash = '#/login';
       }, 10);
       return;
     }
@@ -187,7 +190,7 @@ export const bindCommentInteractions = (getCommentsFn) => {
       const commentId = Number(cancelEdit.getAttribute('data-cancel-edit'));
       const section = document.querySelector('[data-comments-section]');
       const postId = Number(section?.dataset.postId);
-      await refreshCommentList(postId, getCommentsFn);
+      await refreshCommentList(postId, _getCommentsFn);
       return;
     }
 
@@ -212,7 +215,7 @@ export const bindCommentInteractions = (getCommentsFn) => {
       try {
         await deleteComment(commentId);
         toast.success('Comment deleted.');
-        await refreshCommentList(postId, getCommentsFn);
+        await refreshCommentList(postId, _getCommentsFn);
       } catch (error) {
         const message =
           error.details?.message || error.message || 'Delete failed';
@@ -250,7 +253,7 @@ export const bindCommentInteractions = (getCommentsFn) => {
     try {
       await updateComment(commentId, { content });
       toast.success('Comment updated.');
-      await refreshCommentList(postId, getCommentsFn);
+      await refreshCommentList(postId, _getCommentsFn);
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Update failed';

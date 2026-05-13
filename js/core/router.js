@@ -14,96 +14,94 @@ import {
   registerPage,
 } from '../modules/auth/auth.page.js';
 
-const normalizeHash = (hash) => {
-  if (!hash || hash === '#') {
-    return '#home';
+const HASH_ALIASES = {
+  '#': '#home',
+};
+
+const normalizeHash = (hash) => HASH_ALIASES[hash] ?? (hash || '#home');
+
+const ROUTES = [
+  {
+    pattern: '#/login',
+    exact: true,
+    render: loginPage,
+    init: () => initAuthPage('login'),
+  },
+  {
+    pattern: '#/register',
+    exact: true,
+    render: registerPage,
+    init: () => initAuthPage('register'),
+  },
+  {
+    pattern: '#/logout',
+    exact: true,
+    render: logoutPage,
+    init: initLogoutPage,
+  },
+  {
+    pattern: '#/posts',
+    exact: false,
+    render: postsPage,
+    init: initPostsPage,
+  },
+  {
+    pattern: '#/user/profile',
+    exact: true,
+    render: myProfilePage,
+    init: initMyProfilePage,
+  },
+  {
+    pattern: '#/user/posts',
+    exact: true,
+    render: myPostsPage,
+    init: initMyPostsPage,
+  },
+  {
+    pattern: null,
+    exact: false,
+    render: homePage,
+    init: (hash) => {
+      initHomePage();
+      const baseHash = hash.split('?')[0];
+      if (baseHash !== '#home') {
+        const section = document.querySelector(baseHash);
+        if (section) section.scrollIntoView({ behavior: 'smooth' });
+      }
+    },
+  },
+];
+
+const matchRoute = (hash) => {
+  const baseHash = hash.split('?')[0];
+
+  for (const route of ROUTES) {
+    if (route.pattern === null) return route;
+
+    if (route.exact) {
+      if (hash === route.pattern) return route;
+    } else {
+      if (baseHash === route.pattern) return route;
+    }
   }
 
-  if (hash === '#login') {
-    return '#/auth/login';
-  }
-
-  if (hash === '#register') {
-    return '#/auth/register';
-  }
-
-  if (hash === '#auth/login') {
-    return '#/auth/login';
-  }
-
-  if (hash === '#auth/register') {
-    return '#/auth/register';
-  }
-
-  if (hash === '#auth/logout') {
-    return '#/auth/logout';
-  }
-
-  return hash;
+  return ROUTES[ROUTES.length - 1];
 };
 
 const setActiveLink = (hash) => {
   const baseHash = hash.split('?')[0];
-  const links = document.querySelectorAll('.nav-links a');
-
-  links.forEach((link) => {
-    const isActive = link.getAttribute('href') === baseHash;
-    link.classList.toggle('active', isActive);
+  document.querySelectorAll('.nav-links a').forEach((link) => {
+    link.classList.toggle('active', link.getAttribute('href') === baseHash);
   });
 };
 
 const renderView = (hash) => {
-  const baseHash = hash.split('?')[0];
   const view = document.getElementById('view');
-  if (!view) {
-    return;
-  }
+  if (!view) return;
 
-  if (hash === '#/auth/login') {
-    view.innerHTML = loginPage();
-    initAuthPage('login');
-    return;
-  }
-
-  if (hash === '#/auth/register') {
-    view.innerHTML = registerPage();
-    initAuthPage('register');
-    return;
-  }
-
-  if (hash === '#/auth/logout') {
-    view.innerHTML = logoutPage();
-    initLogoutPage();
-    return;
-  }
-
-  if (baseHash === '#/posts') {
-    view.innerHTML = postsPage();
-    initPostsPage();
-    return;
-  }
-
-  if (baseHash === '#/user/profile') {
-    view.innerHTML = myProfilePage();
-    initMyProfilePage();
-    return;
-  }
-
-  if (baseHash === '#/user/posts') {
-    view.innerHTML = myPostsPage();
-    initMyPostsPage();
-    return;
-  }
-
-  view.innerHTML = homePage();
-  initHomePage();
-
-  if (baseHash !== '#home') {
-    const section = document.querySelector(baseHash);
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' });
-    }
-  }
+  const route = matchRoute(hash);
+  view.innerHTML = route.render();
+  route.init(hash);
 };
 
 export const initRouter = () => {
