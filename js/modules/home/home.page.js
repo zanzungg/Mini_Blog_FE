@@ -3,6 +3,10 @@ import { getPosts, getPostById } from '../post/post.service.js';
 import { getCategories } from '../category/category.service.js';
 import { initModal, openModal } from '../../components/modal.js';
 
+import { getCommentsByPost } from '../comment/comment.service.js';
+import { renderCommentsSection } from '../../components/comment.ui.js';
+import { bindCommentInteractions } from '../../components/comment.interactions.js';
+
 let isHomeBound = false;
 
 const escapeHtml = (value = '') =>
@@ -43,46 +47,8 @@ const createExcerpt = (content = '', maxLength = 120) => {
   return `${normalized.slice(0, maxLength).trim()}...`;
 };
 
-const renderPostContent = (content = '') =>
-  escapeHtml(content).replace(/\n/g, '<br />');
-
-const renderComments = (comments = [], depth = 0) => {
-  if (!comments.length) {
-    return '';
-  }
-
-  return `
-    <div class="modal__comment-list">
-      ${comments
-        .map((comment) => {
-          const commenter =
-            comment.user?.name || comment.user?.email || 'Anonymous';
-          const repliesMarkup = renderComments(
-            comment.replies || [],
-            depth + 1
-          );
-
-          return `
-            <div class="modal__comment" data-depth="${depth}">
-              <p class="modal__comment-meta">${escapeHtml(
-                commenter
-              )} · ${escapeHtml(formatDate(comment.createdAt))}</p>
-              <p class="modal__comment-body">${renderPostContent(
-                comment.content
-              )}</p>
-              ${repliesMarkup ? `<div class="modal__comment-children">${repliesMarkup}</div>` : ''}
-            </div>
-          `;
-        })
-        .join('')}
-    </div>
-  `;
-};
-
-const renderPostModalContent = (post) => {
-  if (!post) {
-    return '<p>Post not found.</p>';
-  }
+const renderPostModalContent = (post, comments = []) => {
+  if (!post) return '<p>Post not found.</p>';
 
   const author = post.author?.name || post.author?.email || 'Unknown author';
   const category = post.category?.name || 'General';
@@ -93,17 +59,6 @@ const renderPostModalContent = (post) => {
         : 'Draft'
       : null;
 
-  const comments = post.comments || [];
-  const commentsMarkup = comments.length
-    ? `
-      <div class="modal__divider"></div>
-      <div class="modal__comments">
-        <h4 class="modal__section-title">Comments (${comments.length})</h4>
-        ${renderComments(comments)}
-      </div>
-    `
-    : '';
-
   return `
     <div class="modal__meta">
       <span>${escapeHtml(category)}</span>
@@ -112,8 +67,12 @@ const renderPostModalContent = (post) => {
       ${statusLabel ? `<span>${escapeHtml(statusLabel)}</span>` : ''}
     </div>
     <h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
-    <div class="modal__body">${renderPostContent(post.content)}</div>
-    ${commentsMarkup}
+    <div class="modal__body">${escapeHtml(post.content).replace(/\n/g, '<br />')}</div>
+    ${renderCommentsSection({
+      postId: post.id,
+      comments,
+      isPublished: post.published,
+    })}
   `;
 };
 
@@ -187,6 +146,8 @@ const bindHomeInteractions = () => {
     return;
   }
 
+  bindCommentInteractions(getCommentsByPost);
+
   const handlePostTrigger = async (event) => {
     const trigger = event.target.closest('[data-post-id]');
     if (!trigger) {
@@ -206,8 +167,13 @@ const bindHomeInteractions = () => {
         openModal('<p>Post not found.</p>');
         return;
       }
-
-      openModal(renderPostModalContent(post));
+      let comments = [];
+      try {
+        ({ items: comments } = await getCommentsByPost(id));
+      } catch {
+        toast.error('Unable to load comments.');
+      }
+      openModal(renderPostModalContent(post, comments));
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Request failed';
@@ -217,6 +183,9 @@ const bindHomeInteractions = () => {
   };
 
   document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-modal]')) {
+      return;
+    }
     const isPostTrigger = event.target.closest('[data-post-id]');
     if (isPostTrigger) {
       handlePostTrigger(event);
@@ -225,6 +194,10 @@ const bindHomeInteractions = () => {
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    if (event.target.closest('[data-modal]')) {
       return;
     }
 

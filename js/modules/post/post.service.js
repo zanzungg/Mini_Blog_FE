@@ -9,6 +9,8 @@ import {
 } from './post.api.js';
 import { getAuthState } from '../../core/store.js';
 
+export { getCommentsByPost } from '../comment/comment.service.js';
+
 const ensureSuccess = (payload, fallback) => {
   if (payload?.status === 'success') {
     return payload.data;

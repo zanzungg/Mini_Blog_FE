@@ -897,3 +897,69 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+.modal__comment-auth {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px;
+  align-items: center;
+
+  padding: 18px 20px;
+  border-radius: 18px;
+
+  background: linear-gradient(135deg, #fff, #f8f2eb);
+  border: 1px solid var(--border);
+
+  box-shadow: 0 10px 24px rgba(30, 30, 30, 0.06);
+}
+
+.modal__comment-auth-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 24px;
+
+  background: rgba(215, 107, 74, 0.12);
+}
+
+.modal__comment-auth-content {
+  display: grid;
+  gap: 6px;
+}
+
+.modal__comment-auth-content h5 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--bg-ink);
+}
+
+.modal__comment-auth-content p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.modal__comment-auth-btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .modal__comment-auth {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .modal__comment-auth-icon {
+    margin: 0 auto;
+  }
+
+  .modal__comment-auth-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

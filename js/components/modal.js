@@ -22,6 +22,13 @@ export const openModal = (contentHtml = '') => {
   modalEl.classList.add('modal--open');
   modalEl.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
+
+  const focusTarget = contentEl.querySelector(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  if (focusTarget) {
+    focusTarget.focus();
+  }
 };
 
 export const closeModal = () => {
@@ -32,10 +39,19 @@ export const closeModal = () => {
     return;
   }
 
+  if (modalEl.contains(document.activeElement)) {
+    document.activeElement.blur();
+  }
+
   modalEl.classList.remove('modal--open');
   modalEl.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('modal-open');
   contentEl.innerHTML = '';
+
+  setTimeout(() => {
+    const contentEl = document.querySelector('[data-modal-content]');
+    if (contentEl) contentEl.innerHTML = '';
+  }, 300);
 };
 
 export const initModal = () => {

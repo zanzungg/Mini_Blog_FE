@@ -3,6 +3,10 @@ import { getPosts, getPostById } from './post.service.js';
 import { getCategories } from '../category/category.service.js';
 import { initModal, openModal } from '../../components/modal.js';
 
+import { getCommentsByPost } from '../comment/comment.service.js';
+import { renderCommentsSection } from '../../components/comment.ui.js';
+import { bindCommentInteractions } from '../../components/comment.interactions.js';
+
 let isPostsBound = false;
 let postsState = {
   page: 1,
@@ -63,40 +67,7 @@ const createExcerpt = (content = '', maxLength = 140) => {
 const renderPostContent = (content = '') =>
   escapeHtml(content).replace(/\n/g, '<br />');
 
-const renderComments = (comments = [], depth = 0) => {
-  if (!comments.length) {
-    return '';
-  }
-
-  return `
-    <div class="modal__comment-list">
-      ${comments
-        .map((comment) => {
-          const commenter =
-            comment.user?.name || comment.user?.email || 'Anonymous';
-          const repliesMarkup = renderComments(
-            comment.replies || [],
-            depth + 1
-          );
-
-          return `
-            <div class="modal__comment" data-depth="${depth}">
-              <p class="modal__comment-meta">${escapeHtml(
-                commenter
-              )} · ${escapeHtml(formatDate(comment.createdAt))}</p>
-              <p class="modal__comment-body">${renderPostContent(
-                comment.content
-              )}</p>
-              ${repliesMarkup ? `<div class="modal__comment-children">${repliesMarkup}</div>` : ''}
-            </div>
-          `;
-        })
-        .join('')}
-    </div>
-  `;
-};
-
-const renderPostModalContent = (post) => {
+const renderPostModalContent = (post, comments = []) => {
   if (!post) {
     return '<p>Post not found.</p>';
   }
@@ -110,17 +81,6 @@ const renderPostModalContent = (post) => {
         : 'Draft'
       : null;
 
-  const comments = post.comments || [];
-  const commentsMarkup = comments.length
-    ? `
-      <div class="modal__divider"></div>
-      <div class="modal__comments">
-        <h4 class="modal__section-title">Comments (${comments.length})</h4>
-        ${renderComments(comments)}
-      </div>
-    `
-    : '';
-
   return `
     <div class="modal__meta">
       <span>${escapeHtml(category)}</span>
@@ -130,7 +90,11 @@ const renderPostModalContent = (post) => {
     </div>
     <h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
     <div class="modal__body">${renderPostContent(post.content)}</div>
-    ${commentsMarkup}
+    ${renderCommentsSection({
+      postId: post.id,
+      comments,
+      isPublished: post.published,
+    })}
   `;
 };
 
@@ -246,6 +210,10 @@ const bindPostsInteractions = () => {
     return;
   }
 
+  bindCommentInteractions(getCommentsByPost);
+
+  isPostsBound = true;
+
   document.addEventListener('submit', (event) => {
     const form = event.target.closest('[data-post-search-form]');
     if (!form) {
@@ -290,6 +258,10 @@ const bindPostsInteractions = () => {
   });
 
   document.addEventListener('click', async (event) => {
+    if (event.target.closest('[data-modal]')) {
+      return;
+    }
+
     const pageButton = event.target.closest('[data-page]');
     if (pageButton && pageButton.closest('[data-post-pagination]')) {
       if (pageButton.disabled) {
@@ -335,8 +307,13 @@ const bindPostsInteractions = () => {
         openModal('<p>Post not found.</p>');
         return;
       }
-
-      openModal(renderPostModalContent(post));
+      let comments = [];
+      try {
+        ({ items: comments } = await getCommentsByPost(id));
+      } catch {
+        toast.error('Unable to load comments.');
+      }
+      openModal(renderPostModalContent(post, comments));
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Request failed';
@@ -347,6 +324,10 @@ const bindPostsInteractions = () => {
 
   document.addEventListener('keydown', async (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    if (event.target.closest('[data-modal]')) {
       return;
     }
 
@@ -369,8 +350,13 @@ const bindPostsInteractions = () => {
         openModal('<p>Post not found.</p>');
         return;
       }
-
-      openModal(renderPostModalContent(post));
+      let comments = [];
+      try {
+        ({ items: comments } = await getCommentsByPost(id));
+      } catch {
+        toast.error('Unable to load comments.');
+      }
+      openModal(renderPostModalContent(post, comments));
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Request failed';

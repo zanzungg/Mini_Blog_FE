@@ -19,6 +19,10 @@ import {
   deletePost,
 } from '../post/post.service.js';
 
+import { getCommentsByPost } from '../comment/comment.service.js';
+import { renderCommentsSection } from '../../components/comment.ui.js';
+import { bindCommentInteractions } from '../../components/comment.interactions.js';
+
 let isProfileBound = false;
 let isMyPostsBound = false;
 
@@ -70,39 +74,6 @@ const createExcerpt = (content = '', maxLength = 140) => {
 const renderPostContent = (content = '') =>
   escapeHtml(content).replace(/\n/g, '<br />');
 
-const renderComments = (comments = [], depth = 0) => {
-  if (!comments.length) {
-    return '';
-  }
-
-  return `
-    <div class="modal__comment-list">
-      ${comments
-        .map((comment) => {
-          const commenter =
-            comment.user?.name || comment.user?.email || 'Anonymous';
-          const repliesMarkup = renderComments(
-            comment.replies || [],
-            depth + 1
-          );
-
-          return `
-            <div class="modal__comment" data-depth="${depth}">
-              <p class="modal__comment-meta">${escapeHtml(
-                commenter
-              )} · ${escapeHtml(formatDate(comment.createdAt))}</p>
-              <p class="modal__comment-body">${renderPostContent(
-                comment.content
-              )}</p>
-              ${repliesMarkup ? `<div class="modal__comment-children">${repliesMarkup}</div>` : ''}
-            </div>
-          `;
-        })
-        .join('')}
-    </div>
-  `;
-};
-
 const renderPostActions = (post) => {
   if (!post) return '';
 
@@ -135,7 +106,7 @@ const resolveCategoryLabel = (post) =>
 const resolveAuthorLabel = (post) =>
   post.author?.name || post.author?.email || 'You';
 
-const renderPostModalContent = (post) => {
+const renderPostModalContent = (post, comments = []) => {
   if (!post) {
     return '<p>Post not found.</p>';
   }
@@ -149,17 +120,6 @@ const renderPostModalContent = (post) => {
         : 'Draft'
       : null;
 
-  const comments = post.comments || [];
-  const commentsMarkup = comments.length
-    ? `
-      <div class="modal__divider"></div>
-      <div class="modal__comments">
-        <h4 class="modal__section-title">Comments (${comments.length})</h4>
-        ${renderComments(comments)}
-      </div>
-    `
-    : '';
-
   return `
     <div class="modal__meta">
       <span>${escapeHtml(category)}</span>
@@ -170,7 +130,11 @@ const renderPostModalContent = (post) => {
     <h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
     <div class="modal__body">${renderPostContent(post.content)}</div>
     ${renderPostActions(post)}
-    ${commentsMarkup}
+    ${renderCommentsSection({
+      postId: post.id,
+      comments,
+      isPublished: post.published, // draft → ẩn form comment
+    })}
   `;
 };
 
@@ -359,6 +323,8 @@ const bindMyPostsInteractions = () => {
   let _cachedPost = null;
   if (isMyPostsBound) return;
 
+  bindCommentInteractions(getCommentsByPost);
+
   // Mở modal xem chi tiết post
   const handlePostTrigger = async (postId) => {
     if (!Number.isFinite(postId)) return;
@@ -372,9 +338,14 @@ const bindMyPostsInteractions = () => {
         openModal('<p>Post not found.</p>');
         return;
       }
-
+      let comments = [];
+      try {
+        ({ items: comments } = await getCommentsByPost(postId));
+      } catch {
+        toast.error('Unable to load comments.');
+      }
       _cachedPost = post;
-      openModal(renderPostModalContent(post));
+      openModal(renderPostModalContent(post, comments));
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Request failed';
