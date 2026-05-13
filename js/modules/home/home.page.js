@@ -78,7 +78,7 @@ const bindHomeInteractions = () => {
     if (event.target.closest('[data-modal]')) return;
     const trigger = event.target.closest('[data-post-id]');
     if (!trigger) return;
-    event.preventDefault();
+    if (!document.querySelector('[data-latest-posts]')) return;
     handlePostTrigger(event);
   });
 

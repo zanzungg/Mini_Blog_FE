@@ -140,6 +140,7 @@ const bindPostsInteractions = () => {
     // Post card
     const trigger = event.target.closest('[data-post-id]');
     if (!trigger) return;
+    if (!document.querySelector('[data-post-list]')) return;
     const id = Number(trigger.getAttribute('data-post-id'));
     if (!Number.isFinite(id)) return;
     await openPostModal(id);
