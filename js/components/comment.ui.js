@@ -74,7 +74,6 @@ export const renderComments = (comments = [], depth = 0) => {
   `;
 };
 
-// Form thêm comment mới hoặc reply
 export const renderCommentForm = ({
   postId,
   parentId = null,
@@ -131,7 +130,6 @@ export const renderCommentForm = ({
   `;
 };
 
-// Section comments đầy đủ: list + form
 export const renderCommentsSection = ({
   postId,
   comments = [],

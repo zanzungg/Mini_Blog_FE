@@ -6,7 +6,13 @@ import { getCommentsByPost } from '../comment/comment.service.js';
 import { bindCommentInteractions } from '../../components/comment.interactions.js';
 import { renderHeroPost, renderPostCard } from '../../components/post.card.js';
 import { renderPublicPostModal } from '../../components/post.modal.js';
+import {
+  renderPostForm,
+  initPostFormCategories,
+} from '../../components/post.form.js';
 import { escapeHtml } from '../../components/utils.js';
+import { getAuthState } from '../../core/store.js';
+import { createPost } from '../post/post.service.js';
 
 let isHomeBound = false;
 
@@ -37,6 +43,8 @@ const bindHomeInteractions = () => {
     const trigger = event.target.closest('[data-post-id]');
     if (!trigger) return;
 
+    if (!document.querySelector('[data-latest-posts]')) return;
+
     const id = Number(trigger.getAttribute('data-post-id'));
     if (!Number.isFinite(id)) return;
 
@@ -54,7 +62,7 @@ const bindHomeInteractions = () => {
         ({ items: comments } = await getCommentsByPost(id));
       } catch (error) {
         const message =
-          error.details?.message || error.message || 'Fallback message';
+          error.details?.message || error.message || 'Unable to load comments';
         toast.error(message);
       }
 
@@ -67,8 +75,74 @@ const bindHomeInteractions = () => {
     }
   };
 
+  const handleSubmitStory = () => {
+    const { isAuthenticated } = getAuthState();
+
+    if (!isAuthenticated) {
+      toast.error('Please sign in to submit a story.');
+      setTimeout(() => {
+        window.location.hash = '#/login';
+      }, 800);
+      return;
+    }
+
+    openModal(renderPostForm({ mode: 'create' }));
+    initPostFormCategories(null);
+  };
+
+  const handleCreatePostSubmit = (event) => {
+    const form = event.target.closest('[data-post-form]');
+    if (!form) return;
+    if (form.dataset.mode !== 'create') return;
+
+    event.preventDefault();
+
+    const formData = new FormData(form);
+    const title = String(formData.get('title') || '').trim();
+    const content = String(formData.get('content') || '').trim();
+    const rawCategory = formData.get('categoryId');
+    const categoryId = rawCategory ? Number(rawCategory) : undefined;
+
+    if (!title || !content) {
+      toast.error('Please fill in title and content.');
+      return;
+    }
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    const setLoading = (isLoading) => {
+      if (!submitButton) return;
+      submitButton.disabled = isLoading;
+      submitButton.textContent = isLoading ? 'Saving...' : 'Create post';
+    };
+
+    setLoading(true);
+
+    createPost({ title, content, categoryId })
+      .then(() => {
+        toast.success('Post created! Redirecting to My Posts...');
+        import('../../components/modal.js').then(({ closeModal }) => {
+          closeModal();
+        });
+        setTimeout(() => {
+          window.location.hash = '#/user/posts';
+        }, 800);
+      })
+      .catch((error) => {
+        const message =
+          error.details?.message || error.message || 'Save failed';
+        toast.error(message);
+      })
+      .finally(() => setLoading(false));
+  };
+
   document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-submit-story]')) {
+      handleSubmitStory();
+      return;
+    }
+
     if (event.target.closest('[data-modal]')) return;
+
     const trigger = event.target.closest('[data-post-id]');
     if (trigger) handlePostTrigger(event);
   });
@@ -79,7 +153,12 @@ const bindHomeInteractions = () => {
     const trigger = event.target.closest('[data-post-id]');
     if (!trigger) return;
     if (!document.querySelector('[data-latest-posts]')) return;
+    event.preventDefault();
     handlePostTrigger(event);
+  });
+
+  document.addEventListener('submit', (event) => {
+    handleCreatePostSubmit(event);
   });
 
   isHomeBound = true;
@@ -134,7 +213,9 @@ export const homePage = () => `
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#/posts">Start Reading</a>
-          <button class="btn btn-ghost">Submit a Story</button>
+          <button class="btn btn-ghost" type="button" data-submit-story>
+            Submit a Story
+          </button>
         </div>
       </div>
       <div data-hero-post>

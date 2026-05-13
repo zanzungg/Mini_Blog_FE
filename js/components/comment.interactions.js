@@ -19,7 +19,6 @@ const escapeHtml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-// Refresh chỉ phần comment list trong modal
 const refreshCommentList = async (postId, getCommentsFn) => {
   const section = document.querySelector('[data-comments-section]');
   if (!section) return;
@@ -49,7 +48,6 @@ export const bindCommentInteractions = (getCommentsFn) => {
 
   initConfirmModal();
 
-  // Submit: thêm comment hoặc reply
   document.addEventListener('submit', async (event) => {
     const form = event.target.closest('[data-comment-form]');
     if (!form) return;
@@ -84,7 +82,6 @@ export const bindCommentInteractions = (getCommentsFn) => {
       await createComment({ content, postId, parentId });
       toast.success('Comment posted.');
 
-      // Reset form về dạng ban đầu nếu là reply form
       if (parentId) {
         const replyContainer = form.closest('[data-reply-container]');
         if (replyContainer) replyContainer.remove();
@@ -117,7 +114,6 @@ export const bindCommentInteractions = (getCommentsFn) => {
       return;
     }
 
-    // Reply button — thêm inline reply form
     const replyBtn = event.target.closest('[data-reply-to]');
     if (replyBtn) {
       const { isAuthenticated } = getAuthState();
@@ -130,7 +126,6 @@ export const bindCommentInteractions = (getCommentsFn) => {
       const commentEl = replyBtn.closest('[data-comment-id]');
       if (!commentEl) return;
 
-      // Remove existing reply form nếu có
       commentEl.querySelector('[data-reply-container]')?.remove();
 
       const section = document.querySelector('[data-comments-section]');
@@ -168,7 +163,6 @@ export const bindCommentInteractions = (getCommentsFn) => {
       );
       if (!bodyEl) return;
 
-      // Lấy text gốc (bỏ html entities)
       const originalText = bodyEl.textContent.trim();
 
       bodyEl.innerHTML = `
