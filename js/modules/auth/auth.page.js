@@ -20,7 +20,7 @@ export const loginPage = () => `
 				<button class="btn btn-primary" type="submit">Login</button>
 			</form>
 			<p class="auth-footer">
-				New here? <a href="#/auth/register">Create an account</a>
+				New here? <a href="#/register">Create an account</a>
 			</p>
 		</div>
 	</section>
@@ -53,7 +53,7 @@ export const registerPage = () => `
 				<button class="btn btn-primary" type="submit">Register</button>
 			</form>
 			<p class="auth-footer">
-				Already have an account? <a href="#/auth/login">Login</a>
+				Already have an account? <a href="#/login">Login</a>
 			</p>
 		</div>
 	</section>
@@ -138,6 +138,6 @@ export const initLogoutPage = async () => {
     const message = error.details?.message || error.message || 'Logout failed';
     toast.error(message);
   } finally {
-    window.location.hash = '#/auth/login';
+    window.location.hash = '#/login';
   }
 };

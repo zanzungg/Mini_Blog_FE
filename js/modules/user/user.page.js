@@ -18,10 +18,12 @@ import {
   publishPost,
   deletePost,
 } from '../post/post.service.js';
-
 import { getCommentsByPost } from '../comment/comment.service.js';
-import { renderCommentsSection } from '../../components/comment.ui.js';
 import { bindCommentInteractions } from '../../components/comment.interactions.js';
+import { renderMyPostCard } from '../../components/post.card.js';
+import { renderOwnerPostModal } from '../../components/post.modal.js';
+import { renderPagination } from '../../components/pagination.js';
+import { escapeHtml } from '../../components/utils.js';
 
 let isProfileBound = false;
 let isMyPostsBound = false;
@@ -33,230 +35,96 @@ let myPostsState = {
   status: '',
 };
 
-const escapeHtml = (value = '') =>
-  String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-
-const formatDate = (value) => {
-  if (!value) {
-    return 'Unknown date';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return 'Unknown date';
-  }
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-};
-
-const createExcerpt = (content = '', maxLength = 140) => {
-  const normalized = String(content).replace(/\s+/g, ' ').trim();
-  if (!normalized) {
-    return 'No summary available.';
-  }
-
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  return `${normalized.slice(0, maxLength).trim()}...`;
-};
-
-const renderPostContent = (content = '') =>
-  escapeHtml(content).replace(/\n/g, '<br />');
-
+// ── Post actions (owner-only, không tái sử dụng ở page khác) ─────────────────
 const renderPostActions = (post) => {
   if (!post) return '';
-
   const isDraft = post.published === false;
-
   return `
     <div class="modal-actions">
       ${
         isDraft
           ? `
-        <button class="btn btn-ghost" type="button" data-post-edit="${post.id}">
-          Edit
-        </button>
-        <button class="btn btn-primary" type="button" data-post-publish="${post.id}">
-          Publish
-        </button>
+        <button class="btn btn-ghost" type="button" data-post-edit="${post.id}">Edit</button>
+        <button class="btn btn-primary" type="button" data-post-publish="${post.id}">Publish</button>
       `
           : ''
       }
-      <button class="btn btn-danger" type="button" data-post-delete="${post.id}">
-        Delete
-      </button>
+      <button class="btn btn-danger" type="button" data-post-delete="${post.id}">Delete</button>
     </div>
   `;
 };
 
-const resolveCategoryLabel = (post) =>
-  post.category?.name || post.category || 'General';
+// renderOwnerPostModal nhận renderPostActions làm callback
+const renderPostModalContent = (post, comments = []) =>
+  renderOwnerPostModal(post, comments, renderPostActions);
 
-const resolveAuthorLabel = (post) =>
-  post.author?.name || post.author?.email || 'You';
-
-const renderPostModalContent = (post, comments = []) => {
-  if (!post) {
-    return '<p>Post not found.</p>';
-  }
-
-  const category = resolveCategoryLabel(post);
-  const author = resolveAuthorLabel(post);
-  const statusLabel =
-    typeof post.published === 'boolean'
-      ? post.published
-        ? 'Published'
-        : 'Draft'
-      : null;
-
-  return `
-    <div class="modal__meta">
-      <span>${escapeHtml(category)}</span>
-      <span>${escapeHtml(formatDate(post.createdAt))}</span>
-      <span>By ${escapeHtml(author)}</span>
-      ${statusLabel ? `<span>${escapeHtml(statusLabel)}</span>` : ''}
-    </div>
-    <h3 id="modal-title" class="modal__title">${escapeHtml(post.title)}</h3>
-    <div class="modal__body">${renderPostContent(post.content)}</div>
-    ${renderPostActions(post)}
-    ${renderCommentsSection({
-      postId: post.id,
-      comments,
-      isPublished: post.published, // draft → ẩn form comment
-    })}
-  `;
-};
-
+// ── Profile card ─────────────────────────────────────────────────────────────
 const renderProfileCard = () => {
   const { isAuthenticated, user } = getAuthState();
 
   if (!isAuthenticated || !user) {
     return `
-			<section class="auth">
-				<div class="auth-card">
-					<div>
-						<h2 class="auth-title">Sign in to view your profile</h2>
-						<p class="auth-subtitle">Your account details will appear here.</p>
-					</div>
-					<a class="btn btn-primary" href="#/auth/login">Go to login</a>
-				</div>
-			</section>
-		`;
-  }
-
-  return `
-		<section class="section profile">
-			<div class="profile-card">
-				<div>
-					<h2 class="section-title">My Profile</h2>
-					<p class="posts-subtitle">Update your display name and review your email.</p>
-				</div>
-				<form class="profile-form" data-profile-form>
-					<label class="profile-field">
-						<span>Name</span>
-						<input type="text" name="name" value="${escapeHtml(
-              user.name || ''
-            )}" placeholder="Your name" required />
-					</label>
-					<label class="profile-field">
-						<span>Email</span>
-						<input type="email" name="email" value="${escapeHtml(
-              user.email || ''
-            )}" readonly />
-					</label>
-					<button class="btn btn-primary" type="submit">Save changes</button>
-				</form>
-			</div>
-		</section>
-	`;
-};
-
-const renderMyPostsList = (posts) => {
-  if (!posts.length) {
-    return '<p>No posts match your current filters.</p>';
-  }
-
-  return posts
-    .map((post) => {
-      const statusLabel = post.published ? 'Published' : 'Draft';
-      const statusClass = post.published
-        ? 'status-pill--success'
-        : 'status-pill--draft';
-      const category = resolveCategoryLabel(post);
-
-      return `
-        <article class="post-card post-card--clickable" data-post-id="${post.id}" role="button" tabindex="0">
-          <div class="post-card__meta">
-            <span>${escapeHtml(category)} · ${escapeHtml(formatDate(post.createdAt))}</span>
-            <span class="status-pill ${statusClass}">${statusLabel}</span>
+      <section class="auth">
+        <div class="auth-card">
+          <div>
+            <h2 class="auth-title">Sign in to view your profile</h2>
+            <p class="auth-subtitle">Your account details will appear here.</p>
           </div>
-          <h3>${escapeHtml(post.title)}</h3>
-          <p>${escapeHtml(createExcerpt(post.content))}</p>
-        </article>
-      `;
-    })
-    .join('');
-};
-
-const renderMyPostsPagination = (meta) => {
-  if (!meta || meta.totalPages <= 1) return '';
-
-  const current = meta.page || 1;
-  const total = meta.totalPages || 1;
-  const pages = Array.from({ length: total }, (_, i) => i + 1);
+          <a class="btn btn-primary" href="#/auth/login">Go to login</a>
+        </div>
+      </section>
+    `;
+  }
 
   return `
-    <button class="btn btn-ghost" data-my-posts-page="${current - 1}" ${current === 1 ? 'disabled' : ''}>Prev</button>
-    ${pages
-      .map(
-        (page) => `
-        <button class="btn ${page === current ? 'btn-primary' : 'btn-ghost'}" data-my-posts-page="${page}">
-          ${page}
-        </button>
-      `
-      )
-      .join('')}
-    <button class="btn btn-ghost" data-my-posts-page="${current + 1}" ${current === total ? 'disabled' : ''}>Next</button>
+    <section class="section profile">
+      <div class="profile-card">
+        <div>
+          <h2 class="section-title">My Profile</h2>
+          <p class="posts-subtitle">Update your display name and review your email.</p>
+        </div>
+        <form class="profile-form" data-profile-form>
+          <label class="profile-field">
+            <span>Name</span>
+            <input type="text" name="name" value="${escapeHtml(user.name || '')}" placeholder="Your name" required />
+          </label>
+          <label class="profile-field">
+            <span>Email</span>
+            <input type="email" name="email" value="${escapeHtml(user.email || '')}" readonly />
+          </label>
+          <button class="btn btn-primary" type="submit">Save changes</button>
+        </form>
+      </div>
+    </section>
   `;
 };
 
+// ── My posts list ─────────────────────────────────────────────────────────────
+const renderMyPostsList = (posts) => {
+  if (!posts.length) return '<p>No posts match your current filters.</p>';
+  return posts.map(renderMyPostCard).join('');
+};
+
+// ── Data fetching ─────────────────────────────────────────────────────────────
 const updateMyPosts = async () => {
   const listEl = document.querySelector('[data-my-posts-list]');
   const paginationEl = document.querySelector('[data-my-posts-pagination]');
-
   if (!listEl || !paginationEl) return;
 
   listEl.innerHTML = '<p>Loading your posts...</p>';
   paginationEl.innerHTML = '';
 
   try {
-    const params = {
-      page: myPostsState.page,
-      limit: myPostsState.limit,
-    };
-
-    if (myPostsState.keyword) {
-      params.keyword = myPostsState.keyword;
-    }
-
-    if (myPostsState.status) {
-      params.status = myPostsState.status;
-    }
+    const params = { page: myPostsState.page, limit: myPostsState.limit };
+    if (myPostsState.keyword) params.keyword = myPostsState.keyword;
+    if (myPostsState.status) params.status = myPostsState.status;
 
     const { items, meta } = await getMyPosts(params);
     listEl.innerHTML = renderMyPostsList(items);
-    paginationEl.innerHTML = renderMyPostsPagination(meta);
+    // prefix khớp với data-my-posts-page trong HTML và click handler
+    paginationEl.innerHTML = renderPagination(meta, {
+      prefix: 'my-posts-page',
+    });
   } catch (error) {
     const message = error.details?.message || error.message || 'Request failed';
     listEl.innerHTML = '<p>Unable to load your posts.</p>';
@@ -265,6 +133,7 @@ const updateMyPosts = async () => {
   }
 };
 
+// ── Profile interactions ──────────────────────────────────────────────────────
 const bindProfileInteractions = () => {
   if (isProfileBound) return;
 
@@ -298,7 +167,6 @@ const bindProfileInteractions = () => {
     };
 
     setLoading(true);
-
     updateUserProfile({ id: user.id, name })
       .then((updatedUser) => {
         if (!updatedUser) {
@@ -319,31 +187,30 @@ const bindProfileInteractions = () => {
   isProfileBound = true;
 };
 
+// ── My posts interactions ─────────────────────────────────────────────────────
 const bindMyPostsInteractions = () => {
   let _cachedPost = null;
   if (isMyPostsBound) return;
 
   bindCommentInteractions(getCommentsByPost);
 
-  // Mở modal xem chi tiết post
   const handlePostTrigger = async (postId) => {
     if (!Number.isFinite(postId)) return;
-
     openModal('<p>Loading post details...</p>');
-
     try {
       const post = await getPostById(postId);
-
       if (!post) {
         openModal('<p>Post not found.</p>');
         return;
       }
+
       let comments = [];
       try {
         ({ items: comments } = await getCommentsByPost(postId));
       } catch {
         toast.error('Unable to load comments.');
       }
+
       _cachedPost = post;
       openModal(renderPostModalContent(post, comments));
     } catch (error) {
@@ -358,25 +225,22 @@ const bindMyPostsInteractions = () => {
   document.addEventListener('submit', (event) => {
     const form = event.target.closest('[data-my-posts-search-form]');
     if (!form) return;
-
     event.preventDefault();
     const input = form.querySelector('[data-my-posts-search]');
     if (!input) return;
-
     myPostsState = { ...myPostsState, page: 1, keyword: input.value.trim() };
     updateMyPosts();
   });
 
-  // Filter status
+  // Status filter
   document.addEventListener('change', (event) => {
     const select = event.target.closest('[data-my-posts-status]');
     if (!select) return;
-
     myPostsState = { ...myPostsState, page: 1, status: select.value };
     updateMyPosts();
   });
 
-  // Click: pagination / create / edit / publish / open post
+  // Click handler
   document.addEventListener('click', async (event) => {
     // Pagination
     const pageButton = event.target.closest('[data-my-posts-page]');
@@ -392,7 +256,7 @@ const bindMyPostsInteractions = () => {
     // Create post
     if (event.target.closest('[data-create-post]')) {
       openModal(renderPostForm({ mode: 'create' }));
-      initPostFormCategories(null); // load categories vào dropdown
+      initPostFormCategories(null);
       return;
     }
 
@@ -414,17 +278,14 @@ const bindMyPostsInteractions = () => {
     if (publishTrigger) {
       event.stopPropagation();
       const postId = Number(publishTrigger.getAttribute('data-post-publish'));
-
       const confirmed = await openConfirm({
         title: 'Publish this post?',
         message: 'Once published, the post cannot be edited. Are you sure?',
       });
-
       if (!confirmed) return;
 
       publishTrigger.disabled = true;
       publishTrigger.textContent = 'Publishing...';
-
       publishPost(postId)
         .then(() => {
           toast.success('Post published!');
@@ -447,18 +308,15 @@ const bindMyPostsInteractions = () => {
     if (deleteTrigger) {
       event.stopPropagation();
       const postId = Number(deleteTrigger.getAttribute('data-post-delete'));
-
       const confirmed = await openConfirm({
         title: 'Delete this post?',
         message:
           'This action cannot be undone. The post will be permanently deleted.',
       });
-
       if (!confirmed) return;
 
       deleteTrigger.disabled = true;
       deleteTrigger.textContent = 'Deleting...';
-
       deletePost(postId)
         .then(() => {
           toast.success('Post deleted.');
@@ -476,18 +334,10 @@ const bindMyPostsInteractions = () => {
       return;
     }
 
-    // Open post detail
+    // Open post detail — chỉ khi click từ ngoài modal
     const postTrigger = event.target.closest('[data-post-id]');
-
-    if (postTrigger) {
-      // Ignore clicks inside modal
-      if (event.target.closest('[data-modal]')) {
-        return;
-      }
-
-      const postId = Number(postTrigger.dataset.postId);
-
-      handlePostTrigger(postId);
+    if (postTrigger && !event.target.closest('[data-modal]')) {
+      handlePostTrigger(Number(postTrigger.dataset.postId));
     }
   });
 
@@ -495,18 +345,15 @@ const bindMyPostsInteractions = () => {
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     const trigger = event.target.closest('[data-post-id]');
-    if (!trigger) return;
-    if (event.target.closest('[data-modal]')) return;
+    if (!trigger || event.target.closest('[data-modal]')) return;
     event.preventDefault();
-    const postId = Number(trigger.dataset.postId);
-    handlePostTrigger(postId);
+    handlePostTrigger(Number(trigger.dataset.postId));
   });
 
-  // Submit post form (create / edit)
+  // Submit: create / edit post form
   document.addEventListener('submit', (event) => {
     const form = event.target.closest('[data-post-form]');
     if (!form) return;
-
     event.preventDefault();
 
     const mode = form.dataset.mode;
@@ -514,7 +361,6 @@ const bindMyPostsInteractions = () => {
     const formData = new FormData(form);
     const title = String(formData.get('title') || '').trim();
     const content = String(formData.get('content') || '').trim();
-
     const rawCategory = formData.get('categoryId');
     const categoryId = rawCategory ? Number(rawCategory) : undefined;
 
@@ -559,6 +405,7 @@ const bindMyPostsInteractions = () => {
   isMyPostsBound = true;
 };
 
+// ── Exports ───────────────────────────────────────────────────────────────────
 export const initMyProfilePage = () => {
   initModal();
   bindProfileInteractions();

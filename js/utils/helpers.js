@@ -62,7 +62,7 @@ export const requestJson = async (path, options = {}) => {
   } catch {
     const { clearAuthState } = await import('../core/store.js');
     clearAuthState();
-    window.location.hash = '#/auth/login';
+    window.location.hash = '#/login';
 
     const error = new Error('Session expired. Please sign in again.');
     error.statusCode = 401;

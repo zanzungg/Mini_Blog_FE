@@ -10,7 +10,10 @@ export const modal = () => `
   </div>
 `;
 
+let _lastFocusedElement = null;
+
 export const openModal = (contentHtml = '') => {
+  _lastFocusedElement = document.activeElement;
   const modalEl = document.querySelector('[data-modal]');
   const contentEl = document.querySelector('[data-modal-content]');
 
@@ -48,10 +51,8 @@ export const closeModal = () => {
   document.body.classList.remove('modal-open');
   contentEl.innerHTML = '';
 
-  setTimeout(() => {
-    const contentEl = document.querySelector('[data-modal-content]');
-    if (contentEl) contentEl.innerHTML = '';
-  }, 300);
+  _lastFocusedElement?.focus();
+  _lastFocusedElement = null;
 };
 
 export const initModal = () => {
