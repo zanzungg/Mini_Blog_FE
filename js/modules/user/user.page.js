@@ -35,7 +35,6 @@ let myPostsState = {
   status: '',
 };
 
-// ── Post actions (owner-only, không tái sử dụng ở page khác) ─────────────────
 const renderPostActions = (post) => {
   if (!post) return '';
   const isDraft = post.published === false;
@@ -54,11 +53,9 @@ const renderPostActions = (post) => {
   `;
 };
 
-// renderOwnerPostModal nhận renderPostActions làm callback
 const renderPostModalContent = (post, comments = []) =>
   renderOwnerPostModal(post, comments, renderPostActions);
 
-// ── Profile card ─────────────────────────────────────────────────────────────
 const renderProfileCard = () => {
   const { isAuthenticated, user } = getAuthState();
 
@@ -70,7 +67,7 @@ const renderProfileCard = () => {
             <h2 class="auth-title">Sign in to view your profile</h2>
             <p class="auth-subtitle">Your account details will appear here.</p>
           </div>
-          <a class="btn btn-primary" href="#/auth/login">Go to login</a>
+          <a class="btn btn-primary" href="#/login">Go to login</a>
         </div>
       </section>
     `;
@@ -99,13 +96,11 @@ const renderProfileCard = () => {
   `;
 };
 
-// ── My posts list ─────────────────────────────────────────────────────────────
 const renderMyPostsList = (posts) => {
   if (!posts.length) return '<p>No posts match your current filters.</p>';
   return posts.map(renderMyPostCard).join('');
 };
 
-// ── Data fetching ─────────────────────────────────────────────────────────────
 const updateMyPosts = async () => {
   const listEl = document.querySelector('[data-my-posts-list]');
   const paginationEl = document.querySelector('[data-my-posts-pagination]');
@@ -121,7 +116,6 @@ const updateMyPosts = async () => {
 
     const { items, meta } = await getMyPosts(params);
     listEl.innerHTML = renderMyPostsList(items);
-    // prefix khớp với data-my-posts-page trong HTML và click handler
     paginationEl.innerHTML = renderPagination(meta, {
       prefix: 'my-posts-page',
     });
@@ -133,7 +127,6 @@ const updateMyPosts = async () => {
   }
 };
 
-// ── Profile interactions ──────────────────────────────────────────────────────
 const bindProfileInteractions = () => {
   if (isProfileBound) return;
 
@@ -187,7 +180,6 @@ const bindProfileInteractions = () => {
   isProfileBound = true;
 };
 
-// ── My posts interactions ─────────────────────────────────────────────────────
 const bindMyPostsInteractions = () => {
   let _cachedPost = null;
   if (isMyPostsBound) return;
@@ -196,6 +188,9 @@ const bindMyPostsInteractions = () => {
 
   const handlePostTrigger = async (postId) => {
     if (!Number.isFinite(postId)) return;
+
+    if (!document.querySelector('[data-my-posts-list]')) return;
+
     openModal('<p>Loading post details...</p>');
     try {
       const post = await getPostById(postId);
@@ -334,18 +329,18 @@ const bindMyPostsInteractions = () => {
       return;
     }
 
-    // Open post detail — chỉ khi click từ ngoài modal
     const postTrigger = event.target.closest('[data-post-id]');
     if (postTrigger && !event.target.closest('[data-modal]')) {
+      if (!document.querySelector('[data-my-posts-list]')) return;
       handlePostTrigger(Number(postTrigger.dataset.postId));
     }
   });
 
-  // Keyboard: open post detail
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     const trigger = event.target.closest('[data-post-id]');
     if (!trigger || event.target.closest('[data-modal]')) return;
+    if (!document.querySelector('[data-my-posts-list]')) return;
     event.preventDefault();
     handlePostTrigger(Number(trigger.dataset.postId));
   });
@@ -405,7 +400,6 @@ const bindMyPostsInteractions = () => {
   isMyPostsBound = true;
 };
 
-// ── Exports ───────────────────────────────────────────────────────────────────
 export const initMyProfilePage = () => {
   initModal();
   bindProfileInteractions();
@@ -431,7 +425,7 @@ export const myPostsPage = () => {
             <h2 class="auth-title">Sign in to manage your posts</h2>
             <p class="auth-subtitle">Create, edit, and publish your stories after logging in.</p>
           </div>
-          <a class="btn btn-primary" href="#/auth/login">Go to login</a>
+          <a class="btn btn-primary" href="#/login">Go to login</a>
         </div>
       </section>
     `;
