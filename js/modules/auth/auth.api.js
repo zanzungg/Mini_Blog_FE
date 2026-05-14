@@ -1,0 +1,27 @@
+import { requestJson } from '../../utils/helpers.js';
+
+export const loginRequest = (payload) =>
+  requestJson('/auth/login/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const registerRequest = (payload) =>
+  requestJson('/auth/register/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const logoutRequest = (payload) =>
+  requestJson('/auth/logout/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const getMeRequest = () => requestJson('/auth/me');
+
+export const refreshTokenRequest = (payload) =>
+  requestJson('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
