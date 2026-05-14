@@ -9,16 +9,9 @@ import {
 } from '../modules/comment/comment.service.js';
 import { getPostById } from '../modules/post/post.service.js';
 import { renderComments, renderCommentForm } from './comment.ui.js';
+import { escapeHtml } from './utils.js';
 
 let _isBound = false;
-
-const escapeHtml = (value = '') =>
-  String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 
 const refreshCommentList = async (postId) => {
   const section = document.querySelector('[data-comments-section]');
@@ -30,7 +23,7 @@ const refreshCommentList = async (postId) => {
   listEl.innerHTML = '<p>Refreshing comments...</p>';
 
   try {
-    const { items } = await getPostById(postId);
+    const post = await getPostById(postId);
     const comments = post?.comments ?? [];
 
     const count = section.querySelector('.modal__section-title');
@@ -39,7 +32,7 @@ const refreshCommentList = async (postId) => {
     listEl.innerHTML = comments.length
       ? renderComments(comments)
       : '<p class="modal__comment-empty">No comments yet. Be the first!</p>';
-  } catch {
+  } catch (error) {
     listEl.innerHTML = '<p>Unable to refresh comments.</p>';
   }
 };
