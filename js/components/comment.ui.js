@@ -94,6 +94,8 @@ export const renderCommentForm = ({
         name="content"
         placeholder="${escapeHtml(placeholder)}"
         rows="3"
+        minlength="1"
+        maxlength="2000"
         required
       ></textarea>
       <div class="modal-actions">
