@@ -82,7 +82,8 @@ const renderProfileCard = () => {
         <form class="profile-form" data-profile-form>
           <label class="profile-field">
             <span>Name</span>
-            <input type="text" name="name" value="${escapeHtml(user.name || '')}" placeholder="Your name" required />
+            <input type="text" name="name" value="${escapeHtml(user.name || '')}" placeholder="Your name" 
+            minlength="2" maxlength="50" required />
           </label>
           <label class="profile-field">
             <span>Email</span>
@@ -134,6 +135,7 @@ const bindProfileInteractions = () => {
     if (!form) return;
 
     event.preventDefault();
+
     const submitButton = form.querySelector('button[type="submit"]');
     const formData = new FormData(form);
     const name = String(formData.get('name') || '').trim();
@@ -147,8 +149,16 @@ const bindProfileInteractions = () => {
       toast.error('Name is required.');
       return;
     }
-    if (!user.id) {
-      toast.error('User id is missing.');
+    if (name.length < 2) {
+      toast.error('Name must be at least 2 characters.');
+      return;
+    }
+    if (name.length > 50) {
+      toast.error('Name must not exceed 50 characters.');
+      return;
+    }
+    if (name === (user.name || '').trim()) {
+      toast.error('No changes detected.');
       return;
     }
 
