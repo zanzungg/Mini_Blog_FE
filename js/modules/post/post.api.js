@@ -19,6 +19,10 @@ const buildPostsQuery = (params = {}) => {
     query.set('keyword', params.keyword);
   }
 
+  if (params.status) {
+    query.set('status', params.status);
+  }
+
   const queryString = query.toString();
   return queryString ? `?${queryString}` : '';
 };

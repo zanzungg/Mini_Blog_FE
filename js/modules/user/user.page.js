@@ -187,7 +187,6 @@ const bindMyPostsInteractions = () => {
 
   const handlePostTrigger = async (postId) => {
     if (!Number.isFinite(postId)) return;
-
     if (!document.querySelector('[data-my-posts-list]')) return;
 
     openModal('<p>Loading post details...</p>');
@@ -199,7 +198,10 @@ const bindMyPostsInteractions = () => {
       }
 
       const comments = post.comments ?? [];
-      openModal(renderOwnerPostModal(post, comments));
+
+      _cachedPost = post;
+
+      openModal(renderPostModalContent(post, comments));
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Request failed';
