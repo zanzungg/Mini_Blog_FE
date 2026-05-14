@@ -33,6 +33,8 @@ export const renderPostForm = ({ mode = 'create', post = null } = {}) => {
           name="title"
           placeholder="Post title"
           value="${escapeHtml(post?.title || '')}"
+          minlength="1"
+          maxlength="200"
           required
         />
       </label>
