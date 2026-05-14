@@ -34,6 +34,21 @@ let myPostsState = {
   status: '',
 };
 
+const validatePostForm = (title, content, mode) => {
+  if (!title) {
+    return 'Title is required.';
+  }
+  if (title.length > 200) {
+    return 'Title must not exceed 200 characters.';
+  }
+  if (!content) {
+    return mode === 'create'
+      ? 'Content is required.'
+      : 'Content cannot be empty.';
+  }
+  return null;
+};
+
 const renderPostActions = (post) => {
   if (!post) return '';
   const isDraft = post.published === false;
@@ -363,8 +378,9 @@ const bindMyPostsInteractions = () => {
     const rawCategory = formData.get('categoryId');
     const categoryId = rawCategory ? Number(rawCategory) : undefined;
 
-    if (!title || !content) {
-      toast.error('Please fill in title and content.');
+    const validationError = validatePostForm(title, content, mode);
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
