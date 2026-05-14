@@ -6,7 +6,7 @@ export const loginPage = () => `
 		<div class="auth-card">
 			<div>
 				<h2 class="auth-title">Welcome back</h2>
-				<p class="auth-subtitle">Sign in to continue reading and writing.</p>
+				<p class="auth-subtitle">Login to continue reading and writing.</p>
 			</div>
 			<form class="auth-form" data-auth-form>
 				<label class="auth-field">

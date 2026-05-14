@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from './constants.js';
+import { getAuthState } from '../core/store.js';
 
 export const buildApiUrl = (path) => new URL(path, getApiBaseUrl()).toString();
 
@@ -6,10 +7,21 @@ let _isRefreshing = false;
 let _refreshPromise = null;
 
 const doFetch = async (path, options = {}) => {
+  const { accessToken } = getAuthState();
+
   const response = await fetch(buildApiUrl(path), {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+
+      // Auto attach access token nếu có
+      ...(accessToken
+        ? {
+            Authorization: `Bearer ${accessToken}`,
+          }
+        : {}),
+
+      // Cho phép override
       ...(options.headers || {}),
     },
   });
@@ -64,7 +76,7 @@ export const requestJson = async (path, options = {}) => {
     clearAuthState();
     window.location.hash = '#/login';
 
-    const error = new Error('Session expired. Please sign in again.');
+    const error = new Error('Session expired. Please login again.');
     error.statusCode = 401;
     throw error;
   }

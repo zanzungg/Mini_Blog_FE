@@ -2,7 +2,6 @@ import { toast } from '../../utils/toast.js';
 import { getPosts, getPostById } from '../post/post.service.js';
 import { getCategories } from '../category/category.service.js';
 import { initModal, openModal } from '../../components/modal.js';
-import { getCommentsByPost } from '../comment/comment.service.js';
 import { bindCommentInteractions } from '../../components/comment.interactions.js';
 import { renderHeroPost, renderPostCard } from '../../components/post.card.js';
 import { renderPublicPostModal } from '../../components/post.modal.js';
@@ -37,7 +36,7 @@ const renderCategories = (categories) => {
 const bindHomeInteractions = () => {
   if (isHomeBound) return;
 
-  bindCommentInteractions(getCommentsByPost);
+  bindCommentInteractions();
 
   const handlePostTrigger = async (event) => {
     const trigger = event.target.closest('[data-post-id]');
@@ -57,15 +56,7 @@ const bindHomeInteractions = () => {
         return;
       }
 
-      let comments = [];
-      try {
-        ({ items: comments } = await getCommentsByPost(id));
-      } catch (error) {
-        const message =
-          error.details?.message || error.message || 'Unable to load comments';
-        toast.error(message);
-      }
-
+      const comments = post.comments ?? [];
       openModal(renderPublicPostModal(post, comments));
     } catch (error) {
       const message =
@@ -79,7 +70,7 @@ const bindHomeInteractions = () => {
     const { isAuthenticated } = getAuthState();
 
     if (!isAuthenticated) {
-      toast.error('Please sign in to submit a story.');
+      toast.error('Please login to submit a story.');
       setTimeout(() => {
         window.location.hash = '#/login';
       }, 800);
@@ -182,7 +173,6 @@ export const initHomePage = async () => {
     const { items } = await getPosts({
       page: 1,
       limit: 4,
-      status: 'published',
     });
     const [heroPost, ...latestPosts] = items;
 

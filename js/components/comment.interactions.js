@@ -7,6 +7,7 @@ import {
   updateComment,
   deleteComment,
 } from '../modules/comment/comment.service.js';
+import { getPostById } from '../modules/post/post.service.js';
 import { renderComments, renderCommentForm } from './comment.ui.js';
 
 let _isBound = false;
@@ -19,7 +20,7 @@ const escapeHtml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-const refreshCommentList = async (postId, getCommentsFn) => {
+const refreshCommentList = async (postId) => {
   const section = document.querySelector('[data-comments-section]');
   if (!section) return;
 
@@ -29,21 +30,21 @@ const refreshCommentList = async (postId, getCommentsFn) => {
   listEl.innerHTML = '<p>Refreshing comments...</p>';
 
   try {
-    const { items } = await getCommentsFn(postId);
+    const { items } = await getPostById(postId);
+    const comments = post?.comments ?? [];
+
     const count = section.querySelector('.modal__section-title');
-    if (count) count.textContent = `Comments (${items.length})`;
-    listEl.innerHTML = items.length
-      ? renderComments(items)
+    if (count) count.textContent = `Comments (${comments.length})`;
+
+    listEl.innerHTML = comments.length
+      ? renderComments(comments)
       : '<p class="modal__comment-empty">No comments yet. Be the first!</p>';
   } catch {
     listEl.innerHTML = '<p>Unable to refresh comments.</p>';
   }
 };
 
-let _getCommentsFn = null;
-
-export const bindCommentInteractions = (getCommentsFn) => {
-  _getCommentsFn = getCommentsFn;
+export const bindCommentInteractions = () => {
   if (_isBound) return;
 
   initConfirmModal();
@@ -56,7 +57,7 @@ export const bindCommentInteractions = (getCommentsFn) => {
 
     const { isAuthenticated } = getAuthState();
     if (!isAuthenticated) {
-      toast.error('Please sign in to comment.');
+      toast.error('Please login to comment.');
       return;
     }
 
@@ -89,7 +90,7 @@ export const bindCommentInteractions = (getCommentsFn) => {
         textarea.value = '';
       }
 
-      await refreshCommentList(postId, _getCommentsFn);
+      await refreshCommentList(postId);
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Failed to post comment';
@@ -102,7 +103,6 @@ export const bindCommentInteractions = (getCommentsFn) => {
     }
   });
 
-  // Click: Reply / Edit / Delete / Cancel reply
   document.addEventListener('click', async (event) => {
     if (event.target.closest('[data-action="login"]')) {
       event.preventDefault();
@@ -118,7 +118,7 @@ export const bindCommentInteractions = (getCommentsFn) => {
     if (replyBtn) {
       const { isAuthenticated } = getAuthState();
       if (!isAuthenticated) {
-        toast.error('Please sign in to reply.');
+        toast.error('Please login to reply.');
         return;
       }
 
@@ -143,13 +143,11 @@ export const bindCommentInteractions = (getCommentsFn) => {
       return;
     }
 
-    // Cancel reply
     if (event.target.closest('[data-cancel-reply]')) {
       event.target.closest('[data-reply-container]')?.remove();
       return;
     }
 
-    // Edit comment — inline edit
     const editBtn = event.target.closest('[data-edit-comment]');
     if (editBtn) {
       const commentId = Number(editBtn.getAttribute('data-edit-comment'));
@@ -178,17 +176,15 @@ export const bindCommentInteractions = (getCommentsFn) => {
       return;
     }
 
-    // Cancel edit
     const cancelEdit = event.target.closest('[data-cancel-edit]');
     if (cancelEdit) {
       const commentId = Number(cancelEdit.getAttribute('data-cancel-edit'));
       const section = document.querySelector('[data-comments-section]');
       const postId = Number(section?.dataset.postId);
-      await refreshCommentList(postId, _getCommentsFn);
+      await refreshCommentList(postId);
       return;
     }
 
-    // Delete comment
     const deleteBtn = event.target.closest('[data-delete-comment]');
     if (deleteBtn) {
       const commentId = Number(deleteBtn.getAttribute('data-delete-comment'));
@@ -200,16 +196,14 @@ export const bindCommentInteractions = (getCommentsFn) => {
         message: 'This action cannot be undone.',
       });
 
-      if (!confirmed) {
-        return;
-      }
+      if (!confirmed) return;
 
       deleteBtn.disabled = true;
 
       try {
         await deleteComment(commentId);
         toast.success('Comment deleted.');
-        await refreshCommentList(postId, _getCommentsFn);
+        await refreshCommentList(postId);
       } catch (error) {
         const message =
           error.details?.message || error.message || 'Delete failed';
@@ -220,7 +214,6 @@ export const bindCommentInteractions = (getCommentsFn) => {
     }
   });
 
-  // Submit edit form
   document.addEventListener('submit', async (event) => {
     const form = event.target.closest('[data-edit-comment-form]');
     if (!form) return;
@@ -247,7 +240,7 @@ export const bindCommentInteractions = (getCommentsFn) => {
     try {
       await updateComment(commentId, { content });
       toast.success('Comment updated.');
-      await refreshCommentList(postId, _getCommentsFn);
+      await refreshCommentList(postId);
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Update failed';
