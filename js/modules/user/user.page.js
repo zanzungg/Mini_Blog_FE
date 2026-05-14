@@ -18,7 +18,6 @@ import {
   publishPost,
   deletePost,
 } from '../post/post.service.js';
-import { getCommentsByPost } from '../comment/comment.service.js';
 import { bindCommentInteractions } from '../../components/comment.interactions.js';
 import { renderMyPostCard } from '../../components/post.card.js';
 import { renderOwnerPostModal } from '../../components/post.modal.js';
@@ -64,7 +63,7 @@ const renderProfileCard = () => {
       <section class="auth">
         <div class="auth-card">
           <div>
-            <h2 class="auth-title">Sign in to view your profile</h2>
+            <h2 class="auth-title">Login to view your profile</h2>
             <p class="auth-subtitle">Your account details will appear here.</p>
           </div>
           <a class="btn btn-primary" href="#/login">Go to login</a>
@@ -141,7 +140,7 @@ const bindProfileInteractions = () => {
     const { user } = getAuthState();
 
     if (!user) {
-      toast.error('Please sign in to update your profile.');
+      toast.error('Please login to update your profile.');
       return;
     }
     if (!name) {
@@ -184,7 +183,7 @@ const bindMyPostsInteractions = () => {
   let _cachedPost = null;
   if (isMyPostsBound) return;
 
-  bindCommentInteractions(getCommentsByPost);
+  bindCommentInteractions();
 
   const handlePostTrigger = async (postId) => {
     if (!Number.isFinite(postId)) return;
@@ -199,15 +198,8 @@ const bindMyPostsInteractions = () => {
         return;
       }
 
-      let comments = [];
-      try {
-        ({ items: comments } = await getCommentsByPost(postId));
-      } catch {
-        toast.error('Unable to load comments.');
-      }
-
-      _cachedPost = post;
-      openModal(renderPostModalContent(post, comments));
+      const comments = post.comments ?? [];
+      openModal(renderOwnerPostModal(post, comments));
     } catch (error) {
       const message =
         error.details?.message || error.message || 'Request failed';
@@ -422,7 +414,7 @@ export const myPostsPage = () => {
       <section class="auth">
         <div class="auth-card">
           <div>
-            <h2 class="auth-title">Sign in to manage your posts</h2>
+            <h2 class="auth-title">Login to manage your posts</h2>
             <p class="auth-subtitle">Create, edit, and publish your stories after logging in.</p>
           </div>
           <a class="btn btn-primary" href="#/login">Go to login</a>

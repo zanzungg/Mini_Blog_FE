@@ -18,10 +18,7 @@ export const logoutRequest = (payload) =>
     body: JSON.stringify(payload),
   });
 
-export const getMeRequest = (accessToken) =>
-  requestJson('/auth/me', {
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-  });
+export const getMeRequest = () => requestJson('/auth/me');
 
 export const refreshTokenRequest = (payload) =>
   requestJson('/auth/refresh', {

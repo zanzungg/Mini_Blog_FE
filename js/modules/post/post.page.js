@@ -2,7 +2,6 @@ import { toast } from '../../utils/toast.js';
 import { getPosts, getPostById } from './post.service.js';
 import { getCategories } from '../category/category.service.js';
 import { initModal, openModal } from '../../components/modal.js';
-import { getCommentsByPost } from '../comment/comment.service.js';
 import { bindCommentInteractions } from '../../components/comment.interactions.js';
 import { renderPostCard } from '../../components/post.card.js';
 import { renderPublicPostModal } from '../../components/post.modal.js';
@@ -48,12 +47,8 @@ const openPostModal = async (id) => {
       openModal('<p>Post not found.</p>');
       return;
     }
-    let comments = [];
-    try {
-      ({ items: comments } = await getCommentsByPost(id));
-    } catch {
-      toast.error('Unable to load comments.');
-    }
+
+    const comments = post.comments ?? [];
     openModal(renderPublicPostModal(post, comments));
   } catch (error) {
     const message = error.details?.message || error.message || 'Request failed';
@@ -89,7 +84,7 @@ const updatePosts = async () => {
 const bindPostsInteractions = () => {
   if (isPostsBound) return;
 
-  bindCommentInteractions(getCommentsByPost);
+  bindCommentInteractions();
 
   // Search form
   document.addEventListener('submit', (event) => {
