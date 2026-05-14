@@ -65,6 +65,10 @@ export const bindCommentInteractions = () => {
       toast.error('Comment cannot be empty.');
       return;
     }
+    if (content.length > 2000) {
+      toast.error('Comment must not exceed 2000 characters.');
+      return;
+    }
 
     const submitBtn = form.querySelector('button[type="submit"]');
     if (submitBtn) {
@@ -158,7 +162,13 @@ export const bindCommentInteractions = () => {
 
       bodyEl.innerHTML = `
         <form data-edit-comment-form data-comment-id="${commentId}">
-          <textarea name="content" rows="3" class="modal__comment-input">${escapeHtml(originalText)}</textarea>
+          <textarea 
+            name="content"
+            rows="3"
+            class="modal__comment-input"
+            minlength="1"
+            maxlength="2000"
+          >${escapeHtml(originalText)}</textarea>
           <div class="modal-actions">
             <button class="btn btn-ghost" type="button" data-cancel-edit="${commentId}">Cancel</button>
             <button class="btn btn-primary" type="submit">Save</button>
@@ -221,6 +231,10 @@ export const bindCommentInteractions = () => {
 
     if (!content) {
       toast.error('Comment cannot be empty.');
+      return;
+    }
+    if (content.length > 2000) {
+      toast.error('Comment must not exceed 2000 characters.');
       return;
     }
 
