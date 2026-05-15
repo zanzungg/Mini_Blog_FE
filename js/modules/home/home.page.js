@@ -86,6 +86,8 @@ const bindHomeInteractions = () => {
     if (!form) return;
     if (form.dataset.mode !== 'create') return;
 
+    if (!document.querySelector('[data-latest-posts]')) return;
+
     event.preventDefault();
 
     const formData = new FormData(form);
