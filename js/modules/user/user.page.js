@@ -368,6 +368,8 @@ const bindMyPostsInteractions = () => {
   document.addEventListener('submit', (event) => {
     const form = event.target.closest('[data-post-form]');
     if (!form) return;
+
+    if (!document.querySelector('[data-my-posts-list]')) return;
     event.preventDefault();
 
     const mode = form.dataset.mode;
