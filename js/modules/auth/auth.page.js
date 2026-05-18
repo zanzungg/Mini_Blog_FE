@@ -53,6 +53,57 @@ const validateRegister = (payload) => {
   return null;
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const validateLogin = (payload) => {
+  if (!payload.email?.trim() || !EMAIL_REGEX.test(payload.email.trim())) {
+    return 'Please enter a valid email address.';
+  }
+  if (!payload.password) {
+    return 'Password is required.';
+  }
+  if (payload.password.length < 8) {
+    return 'Password must be at least 8 characters.';
+  }
+  if (payload.password.length > 64) {
+    return 'Password must not exceed 64 characters.';
+  }
+  return null;
+};
+
+const validateRegister = (payload) => {
+  const name = payload.name?.trim() || '';
+  const email = payload.email?.trim() || '';
+  const password = payload.password || '';
+  const confirmPassword = payload.confirmPassword || '';
+
+  if (!name) {
+    return 'Name is required.';
+  }
+  if (name.length < 2) {
+    return 'Name must be at least 2 characters.';
+  }
+  if (name.length > 50) {
+    return 'Name must not exceed 50 characters.';
+  }
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return 'Please enter a valid email address.';
+  }
+  if (!password) {
+    return 'Password is required.';
+  }
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters.';
+  }
+  if (password.length > 64) {
+    return 'Password must not exceed 64 characters.';
+  }
+  if (password !== confirmPassword) {
+    return 'Password confirmation does not match.';
+  }
+  return null;
+};
+
 export const loginPage = () => `
   <section class="auth">
     <div class="auth-card">

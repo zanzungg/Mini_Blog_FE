@@ -73,6 +73,10 @@ export const bindCommentInteractions = () => {
       toast.error(t('comments.commentTooLong'));
       return;
     }
+    if (content.length > 2000) {
+      toast.error('Comment must not exceed 2000 characters.');
+      return;
+    }
 
     const submitBtn = form.querySelector('button[type="submit"]');
     if (submitBtn) {
@@ -241,6 +245,10 @@ export const bindCommentInteractions = () => {
     }
     if (content.length > 2000) {
       toast.error(t('comments.commentTooLong'));
+      return;
+    }
+    if (content.length > 2000) {
+      toast.error('Comment must not exceed 2000 characters.');
       return;
     }
 
