@@ -1,4 +1,4 @@
-import { escapeHtml, formatDate, createExcerpt } from './utils.js';
+import { escapeHtml, formatDate, formatRelativeTime, createExcerpt } from './utils.js';
 import { t } from '../utils/i18n.js';
 
 export const renderPostCard = (post) => {
@@ -8,7 +8,7 @@ export const renderPostCard = (post) => {
 
   return `
     <article class="post-card post-card--clickable" data-post-id="${post.id}" role="button" tabindex="0">
-      <span>${escapeHtml(category)} · ${escapeHtml(formatDate(post.createdAt))}</span>
+      <span>${escapeHtml(category)} · ${escapeHtml(formatRelativeTime(post.createdAt))}</span>
       <h3>${escapeHtml(post.title)}</h3>
       <p>${escapeHtml(createExcerpt(post.content))}</p>
       <p class="hero-meta">${t('post.by')} ${escapeHtml(author)}</p>
@@ -36,7 +36,7 @@ export const renderHeroPost = (post) => {
       <span class="hero-meta">${t('post.latestPost')} · ${escapeHtml(category)}</span>
       <h3>${escapeHtml(post.title)}</h3>
       <p>${escapeHtml(createExcerpt(post.content, 180))}</p>
-      <p class="hero-meta">${t('post.by')} ${escapeHtml(author)} · ${escapeHtml(formatDate(post.createdAt))}</p>
+      <p class="hero-meta">${t('post.by')} ${escapeHtml(author)} · ${escapeHtml(formatRelativeTime(post.createdAt))}</p>
     </article>
   `;
 };
@@ -53,7 +53,7 @@ export const renderMyPostCard = (post) => {
   return `
     <article class="post-card post-card--clickable" data-post-id="${post.id}" role="button" tabindex="0">
       <div class="post-card__meta">
-        <span>${escapeHtml(category)} · ${escapeHtml(formatDate(post.createdAt))}</span>
+        <span>${escapeHtml(category)} · ${escapeHtml(formatRelativeTime(post.createdAt))}</span>
         <span class="status-pill ${statusClass}">${statusLabel}</span>
       </div>
       <h3>${escapeHtml(post.title)}</h3>
