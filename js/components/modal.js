@@ -1,10 +1,12 @@
+import { t } from '../utils/i18n.js';
+
 let isModalBound = false;
 
 export const modal = () => `
   <div class="modal" data-modal aria-hidden="true">
     <div class="modal__overlay" data-modal-close></div>
     <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <button class="modal__close" type="button" data-modal-close aria-label="Close">×</button>
+      <button class="modal__close" type="button" data-modal-close aria-label="${t('modal.close')}">×</button>
       <div data-modal-content></div>
     </div>
   </div>

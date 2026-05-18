@@ -13,11 +13,12 @@ import {
 } from '../../core/store.js';
 
 import { ensureSuccess, normalizeError } from '../../utils/api-response.js';
+import { t } from '../../utils/i18n.js';
 
 export const login = async (credentials) => {
   const { data } = await loginRequest(credentials);
 
-  const payload = ensureSuccess(data, 'Login failed');
+  const payload = ensureSuccess(data, t('auth.loginFailed'));
 
   setAuthState({
     accessToken: payload.accessToken,
@@ -36,7 +37,7 @@ export const login = async (credentials) => {
 export const register = async (formData) => {
   const { data } = await registerRequest(formData);
 
-  const payload = ensureSuccess(data, 'Register failed');
+  const payload = ensureSuccess(data, t('auth.registerFailed'));
 
   setAuthState({
     accessToken: payload.accessToken,
@@ -56,10 +57,10 @@ export const fetchCurrentUser = async () => {
   const { accessToken } = getAuthState();
 
   if (!accessToken) {
-    const error = new Error('Missing access token');
+    const error = new Error(t('auth.missingAccessToken'));
 
     error.details = {
-      message: 'Missing access token',
+      message: t('auth.missingAccessToken'),
     };
 
     throw error;
@@ -67,7 +68,7 @@ export const fetchCurrentUser = async () => {
 
   const { data } = await getMeRequest();
 
-  const payload = ensureSuccess(data, 'Unable to fetch user profile');
+  const payload = ensureSuccess(data, t('auth.profileFetchFailed'));
 
   return payload.user || null;
 };
@@ -111,11 +112,11 @@ export const logout = async () => {
       refreshToken,
     });
 
-    const payload = ensureSuccess(data, 'Logout failed');
+    const payload = ensureSuccess(data, t('auth.logoutFailed'));
 
     return payload;
   } catch (error) {
-    const normalized = normalizeError(error.details, 'Logout failed');
+    const normalized = normalizeError(error.details, t('auth.logoutFailed'));
 
     throw Object.assign(error, {
       details: normalized,
@@ -131,10 +132,10 @@ export const refreshAccessToken = async () => {
   if (!refreshToken) {
     clearAuthState();
 
-    const error = new Error('No refresh token available');
+    const error = new Error(t('auth.noRefreshToken'));
 
     error.details = {
-      message: 'No refresh token available',
+      message: t('auth.noRefreshToken'),
     };
 
     throw error;
@@ -144,7 +145,7 @@ export const refreshAccessToken = async () => {
     refreshToken,
   });
 
-  const payload = ensureSuccess(data, 'Unable to refresh token');
+  const payload = ensureSuccess(data, t('auth.refreshFailed'));
 
   setAuthState({
     accessToken: payload.accessToken,

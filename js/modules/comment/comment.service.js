@@ -5,6 +5,7 @@ import {
 } from './comment.api.js';
 
 import { ensureSuccess } from '../../utils/api-response.js';
+import { t } from '../../utils/i18n.js';
 
 export const createComment = async ({ content, postId, parentId }) => {
   const body = {
@@ -18,7 +19,7 @@ export const createComment = async ({ content, postId, parentId }) => {
 
   const { data } = await createCommentRequest(body);
 
-  const result = ensureSuccess(data, 'Unable to create comment');
+  const result = ensureSuccess(data, t('comments.failedToPost'));
 
   return result.comment || null;
 };
@@ -28,7 +29,7 @@ export const updateComment = async (id, { content }) => {
     content,
   });
 
-  const result = ensureSuccess(data, 'Unable to update comment');
+  const result = ensureSuccess(data, t('comments.updateFailed'));
 
   return result.comment || null;
 };
@@ -36,7 +37,7 @@ export const updateComment = async (id, { content }) => {
 export const deleteComment = async (id) => {
   const { data } = await deleteCommentRequest(id);
 
-  const result = ensureSuccess(data, 'Unable to delete comment');
+  const result = ensureSuccess(data, t('comments.deleteFailed'));
 
   return result.success || false;
 };

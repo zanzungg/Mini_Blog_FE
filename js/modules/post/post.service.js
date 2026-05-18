@@ -9,11 +9,12 @@ import {
 } from './post.api.js';
 
 import { ensureSuccess } from '../../utils/api-response.js';
+import { t } from '../../utils/i18n.js';
 
 export const getPosts = async (params = {}) => {
   const { data } = await getPostsRequest(params);
 
-  const payload = ensureSuccess(data, 'Unable to load posts');
+  const payload = ensureSuccess(data, t('posts.unableLoadPosts'));
 
   return {
     items: payload.data || [],
@@ -24,7 +25,7 @@ export const getPosts = async (params = {}) => {
 export const getPostById = async (id) => {
   const { data } = await getPostByIdRequest(id);
 
-  const payload = ensureSuccess(data, 'Unable to load post details');
+  const payload = ensureSuccess(data, t('posts.unableLoadPostDetails'));
 
   return payload.post || null;
 };
@@ -32,7 +33,7 @@ export const getPostById = async (id) => {
 export const getMyPosts = async (params = {}) => {
   const { data } = await getMyPostsRequest(params);
 
-  const payload = ensureSuccess(data, 'Unable to load your posts');
+  const payload = ensureSuccess(data, t('myPosts.unableLoadYourPosts'));
 
   return {
     items: payload.data || [],
@@ -43,7 +44,7 @@ export const getMyPosts = async (params = {}) => {
 export const createPost = async (payload) => {
   const { data } = await createPostRequest(payload);
 
-  const result = ensureSuccess(data, 'Unable to create post');
+  const result = ensureSuccess(data, t('myPosts.saveFailed'));
 
   return result.post || null;
 };
@@ -51,7 +52,7 @@ export const createPost = async (payload) => {
 export const updatePost = async (id, payload) => {
   const { data } = await updatePostRequest(id, payload);
 
-  const result = ensureSuccess(data, 'Unable to update post');
+  const result = ensureSuccess(data, t('myPosts.saveFailed'));
 
   return result.post || null;
 };
@@ -59,7 +60,7 @@ export const updatePost = async (id, payload) => {
 export const publishPost = async (id) => {
   const { data } = await publishPostRequest(id);
 
-  const result = ensureSuccess(data, 'Unable to publish post');
+  const result = ensureSuccess(data, t('myPosts.publishFailed'));
 
   return result.post || null;
 };
@@ -67,7 +68,7 @@ export const publishPost = async (id) => {
 export const deletePost = async (id) => {
   const { data } = await deletePostRequest(id);
 
-  const result = ensureSuccess(data, 'Unable to delete post');
+  const result = ensureSuccess(data, t('myPosts.deleteFailed'));
 
   return result.success || false;
 };

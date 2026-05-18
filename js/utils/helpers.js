@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from './constants.js';
 import { getAuthState } from '../core/store.js';
+import { t } from './i18n.js';
 
 export const buildApiUrl = (path) => new URL(path, getApiBaseUrl()).toString();
 
@@ -29,7 +30,7 @@ const doFetch = async (path, options = {}) => {
   const contentType = response.headers.get('content-type') || '';
 
   if (!contentType.includes('application/json')) {
-    const error = new Error('Unexpected response format');
+    const error = new Error(t('errors.unexpectedResponse'));
     error.statusCode = response.status;
     throw error;
   }
@@ -76,7 +77,7 @@ export const requestJson = async (path, options = {}) => {
     clearAuthState();
     window.location.hash = '#/login';
 
-    const error = new Error('Session expired. Please login again.');
+    const error = new Error(t('errors.sessionExpired'));
     error.statusCode = 401;
     throw error;
   }

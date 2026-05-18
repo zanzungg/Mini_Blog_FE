@@ -1,3 +1,5 @@
+import { t } from '../utils/i18n.js';
+
 export const renderPagination = (meta, { prefix = 'page' } = {}) => {
   if (!meta || meta.totalPages <= 1) return '';
 
@@ -8,7 +10,7 @@ export const renderPagination = (meta, { prefix = 'page' } = {}) => {
 
   return `
     <button class="btn btn-ghost" ${attr}="${current - 1}" ${current === 1 ? 'disabled' : ''}>
-      Prev
+      ${t('pagination.prev')}
     </button>
     ${pages
       .map(
@@ -20,7 +22,7 @@ export const renderPagination = (meta, { prefix = 'page' } = {}) => {
       )
       .join('')}
     <button class="btn btn-ghost" ${attr}="${current + 1}" ${current === total ? 'disabled' : ''}>
-      Next
+      ${t('pagination.next')}
     </button>
   `;
 };

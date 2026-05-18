@@ -3,3 +3,4 @@ export const getApiBaseUrl = () => {
   return apiUrl || window.location.origin;
 };
 export const AUTH_STORAGE_KEY = 'mini_blog_auth';
+export const LOCALE_STORAGE_KEY = 'mini_blog_locale';

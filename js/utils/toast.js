@@ -5,6 +5,10 @@ let toastRoot = null;
 let toastCounter = 0;
 
 const ensureRoot = () => {
+  if (toastRoot && !toastRoot.isConnected) {
+    toastRoot = null;
+  }
+
   if (!toastRoot) {
     toastRoot = document.getElementById('toast-root');
   }

@@ -7,6 +7,7 @@ import { renderPostCard } from '../../components/post.card.js';
 import { renderPublicPostModal } from '../../components/post.modal.js';
 import { renderPagination } from '../../components/pagination.js';
 import { escapeHtml } from '../../components/utils.js';
+import { t } from '../../utils/i18n.js';
 
 let isPostsBound = false;
 let postsState = {
@@ -25,14 +26,15 @@ const getHashParams = () => {
 };
 
 const renderPosts = (posts) => {
-  if (!posts.length) return '<p>No posts found.</p>';
+  if (!posts.length) return `<p>${t('posts.noPostsFound')}</p>`;
   return posts.map(renderPostCard).join('');
 };
 
 const renderCategoryOptions = (categories) => {
-  if (!categories.length) return '<option value="">All categories</option>';
+  if (!categories.length)
+    return `<option value="">${t('posts.allCategories')}</option>`;
   return [
-    '<option value="">All categories</option>',
+    `<option value="">${t('posts.allCategories')}</option>`,
     ...categories.map(
       (cat) => `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`
     ),
@@ -40,19 +42,20 @@ const renderCategoryOptions = (categories) => {
 };
 
 const openPostModal = async (id) => {
-  openModal('<p>Loading post details...</p>');
+  openModal(`<p>${t('posts.loadingPostDetails')}</p>`);
   try {
     const post = await getPostById(id);
     if (!post) {
-      openModal('<p>Post not found.</p>');
+      openModal(`<p>${t('posts.postNotFound')}</p>`);
       return;
     }
 
     const comments = post.comments ?? [];
     openModal(renderPublicPostModal(post, comments));
   } catch (error) {
-    const message = error.details?.message || error.message || 'Request failed';
-    openModal('<p>Unable to load post details.</p>');
+    const message =
+      error.details?.message || error.message || t('errors.requestFailed');
+    openModal(`<p>${t('posts.unableLoadPostDetails')}</p>`);
     toast.error(message);
   }
 };
@@ -62,7 +65,7 @@ const updatePosts = async () => {
   const paginationEl = document.querySelector('[data-post-pagination]');
   if (!listEl || !paginationEl) return;
 
-  listEl.innerHTML = '<p>Loading posts...</p>';
+  listEl.innerHTML = `<p>${t('posts.loadingPosts')}</p>`;
   paginationEl.innerHTML = '';
 
   try {
@@ -74,8 +77,9 @@ const updatePosts = async () => {
     listEl.innerHTML = renderPosts(items);
     paginationEl.innerHTML = renderPagination(meta, { prefix: 'page' });
   } catch (error) {
-    const message = error.details?.message || error.message || 'Request failed';
-    listEl.innerHTML = '<p>Unable to load posts.</p>';
+    const message =
+      error.details?.message || error.message || t('errors.requestFailed');
+    listEl.innerHTML = `<p>${t('posts.unableLoadPosts')}</p>`;
     paginationEl.innerHTML = '';
     toast.error(message);
   }
@@ -167,8 +171,7 @@ export const initPostsPage = async () => {
 
   const categorySelect = document.querySelector('[data-post-category]');
   if (categorySelect) {
-    categorySelect.innerHTML =
-      '<option value="">Loading categories...</option>';
+    categorySelect.innerHTML = `<option value="">${t('posts.loadingCategories')}</option>`;
     try {
       const { items } = await getCategories({ page: 1, limit: 100 });
       categorySelect.innerHTML = renderCategoryOptions(items);
@@ -181,7 +184,7 @@ export const initPostsPage = async () => {
       }
     } catch (error) {
       const message =
-        error.details?.message || error.message || 'Fallback message';
+        error.details?.message || error.message || t('errors.requestFailed');
       toast.error(message);
     }
   }
@@ -193,27 +196,27 @@ export const postsPage = () => `
   <section class="section posts">
     <div class="posts-header">
       <div>
-        <h2 class="section-title">All Posts</h2>
-        <p class="posts-subtitle">Search and filter stories from the community.</p>
+        <h2 class="section-title">${t('posts.allPosts')}</h2>
+        <p class="posts-subtitle">${t('posts.subtitle')}</p>
       </div>
       <div class="posts-actions">
         <form class="posts-search" data-post-search-form>
           <input
             class="posts-search__input"
             type="search"
-            placeholder="Search posts..."
-            aria-label="Search posts"
+            placeholder="${t('posts.searchPlaceholder')}"
+            aria-label="${t('posts.searchAria')}"
             data-post-search
           />
-          <button class="btn btn-primary" type="submit">Search</button>
+          <button class="btn btn-primary" type="submit">${t('posts.searchButton')}</button>
         </form>
-        <select class="posts-select" data-post-category aria-label="Filter by category">
-          <option value="">Loading categories...</option>
+        <select class="posts-select" data-post-category aria-label="${t('posts.filterAria')}">
+          <option value="">${t('posts.loadingCategories')}</option>
         </select>
       </div>
     </div>
     <div class="posts-grid" data-post-list>
-      <p>Loading posts...</p>
+      <p>${t('posts.loadingPosts')}</p>
     </div>
     <div class="pagination" data-post-pagination></div>
   </section>
