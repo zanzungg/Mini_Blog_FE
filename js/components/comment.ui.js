@@ -1,5 +1,6 @@
 import { getAuthState } from '../core/store.js';
 import { escapeHtml, formatDate } from './utils.js';
+import { t } from '../utils/i18n.js';
 
 // Render threaded comments (recursive)
 export const renderComments = (comments = [], depth = 0) => {
@@ -10,7 +11,9 @@ export const renderComments = (comments = [], depth = 0) => {
       ${comments
         .map((comment) => {
           const commenter =
-            comment.user?.name || comment.user?.email || 'Anonymous';
+            comment.user?.name ||
+            comment.user?.email ||
+            t('comments.anonymous');
           const { user } = getAuthState();
           const isOwner =
             user &&
@@ -28,16 +31,16 @@ export const renderComments = (comments = [], depth = 0) => {
               </p>
               <div class="modal__comment-actions">
                 <button class="btn-link" type="button" data-reply-to="${comment.id}">
-                  Reply
+                  ${t('comments.reply')}
                 </button>
                 ${
                   isOwner
                     ? `
                   <button class="btn-link" type="button" data-edit-comment="${comment.id}">
-                    Edit
+                    ${t('comments.edit')}
                   </button>
                   <button class="btn-link btn-link--danger" type="button" data-delete-comment="${comment.id}">
-                    Delete
+                    ${t('comments.delete')}
                   </button>
                 `
                     : ''
@@ -59,7 +62,7 @@ export const renderComments = (comments = [], depth = 0) => {
 export const renderCommentForm = ({
   postId,
   parentId = null,
-  placeholder = 'Write a comment...',
+  placeholder = t('comments.writeCommentPlaceholder'),
 } = {}) => {
   const { isAuthenticated } = getAuthState();
 
@@ -67,10 +70,9 @@ export const renderCommentForm = ({
     return `
     <div class="modal__comment-auth">
       <div class="modal__comment-auth-content">
-        <h5>Join the conversation</h5>
+        <h5>${t('comments.joinConversation')}</h5>
         <p>
-          Login to leave a comment, reply to discussions,
-          and interact with other readers.
+          ${t('comments.loginPrompt')}
         </p>
       </div>
 
@@ -78,7 +80,7 @@ export const renderCommentForm = ({
         class="btn btn-primary modal__comment-auth-btn" 
         data-action="login"
         data-modal-close>
-        Login
+        ${t('comments.loginAction')}
       </a>
     </div>
   `;
@@ -102,12 +104,12 @@ export const renderCommentForm = ({
         ${
           parentId
             ? `
-          <button class="btn btn-ghost" type="button" data-cancel-reply>Cancel</button>
+          <button class="btn btn-ghost" type="button" data-cancel-reply>${t('comments.cancel')}</button>
         `
             : ''
         }
         <button class="btn btn-primary" type="submit">
-          ${parentId ? 'Reply' : 'Comment'}
+          ${parentId ? t('comments.reply') : t('comments.comment')}
         </button>
       </div>
     </form>
@@ -121,19 +123,19 @@ export const renderCommentsSection = ({
 }) => {
   const commentsMarkup = comments.length
     ? renderComments(comments)
-    : '<p class="modal__comment-empty">No comments yet. Be the first!</p>';
+    : `<p class="modal__comment-empty">${t('comments.noComments')}</p>`;
 
   return `
     <div class="modal__divider"></div>
     <div class="modal__comments" data-comments-section data-post-id="${postId}">
-      <h4 class="modal__section-title">Comments (${comments.length})</h4>
+      <h4 class="modal__section-title">${t('comments.commentsTitle', { count: comments.length })}</h4>
       <div data-comments-list>
         ${commentsMarkup}
       </div>
       ${
         isPublished
           ? renderCommentForm({ postId })
-          : '<p class="modal__comment-hint">Comments are disabled for draft posts.</p>'
+          : `<p class="modal__comment-hint">${t('comments.disabledForDraft')}</p>`
       }
     </div>
   `;

@@ -1,5 +1,5 @@
 import { toast } from '../../utils/toast.js';
-import { getPosts, getPostById } from '../post/post.service.js';
+import { getPosts, getPostById, createPost } from '../post/post.service.js';
 import { getCategories } from '../category/category.service.js';
 import { initModal, openModal } from '../../components/modal.js';
 import { bindCommentInteractions } from '../../components/comment.interactions.js';
@@ -11,17 +11,17 @@ import {
 } from '../../components/post.form.js';
 import { escapeHtml } from '../../components/utils.js';
 import { getAuthState } from '../../core/store.js';
-import { createPost } from '../post/post.service.js';
+import { t } from '../../utils/i18n.js';
 
 let isHomeBound = false;
 
 const renderLatestPosts = (posts) => {
-  if (!posts.length) return '<p>No posts available yet.</p>';
+  if (!posts.length) return `<p>${t('home.noPosts')}</p>`;
   return posts.map(renderPostCard).join('');
 };
 
 const renderCategories = (categories) => {
-  if (!categories.length) return '<p>No categories available yet.</p>';
+  if (!categories.length) return `<p>${t('home.noCategories')}</p>`;
   return categories
     .map(
       (cat) => `
@@ -47,12 +47,12 @@ const bindHomeInteractions = () => {
     const id = Number(trigger.getAttribute('data-post-id'));
     if (!Number.isFinite(id)) return;
 
-    openModal('<p>Loading post details...</p>');
+    openModal(`<p>${t('posts.loadingPostDetails')}</p>`);
 
     try {
       const post = await getPostById(id);
       if (!post) {
-        openModal('<p>Post not found.</p>');
+        openModal(`<p>${t('posts.postNotFound')}</p>`);
         return;
       }
 
@@ -60,8 +60,8 @@ const bindHomeInteractions = () => {
       openModal(renderPublicPostModal(post, comments));
     } catch (error) {
       const message =
-        error.details?.message || error.message || 'Request failed';
-      openModal('<p>Unable to load post details.</p>');
+        error.details?.message || error.message || t('errors.requestFailed');
+      openModal(`<p>${t('posts.unableLoadPostDetails')}</p>`);
       toast.error(message);
     }
   };
@@ -70,7 +70,7 @@ const bindHomeInteractions = () => {
     const { isAuthenticated } = getAuthState();
 
     if (!isAuthenticated) {
-      toast.error('Please login to submit a story.');
+      toast.error(t('homeActions.loginToSubmit'));
       setTimeout(() => {
         window.location.hash = '#/login';
       }, 800);
@@ -97,7 +97,7 @@ const bindHomeInteractions = () => {
     const categoryId = rawCategory ? Number(rawCategory) : undefined;
 
     if (!title || !content) {
-      toast.error('Please fill in title and content.');
+      toast.error(t('homeActions.fillTitleContent'));
       return;
     }
 
@@ -105,14 +105,16 @@ const bindHomeInteractions = () => {
     const setLoading = (isLoading) => {
       if (!submitButton) return;
       submitButton.disabled = isLoading;
-      submitButton.textContent = isLoading ? 'Saving...' : 'Create post';
+      submitButton.textContent = isLoading
+        ? t('homeActions.saving')
+        : t('homeActions.createPost');
     };
 
     setLoading(true);
 
     createPost({ title, content, categoryId })
       .then(() => {
-        toast.success('Post created! Redirecting to My Posts...');
+        toast.success(t('homeActions.postCreatedRedirect'));
         import('../../components/modal.js').then(({ closeModal }) => {
           closeModal();
         });
@@ -122,7 +124,7 @@ const bindHomeInteractions = () => {
       })
       .catch((error) => {
         const message =
-          error.details?.message || error.message || 'Save failed';
+          error.details?.message || error.message || t('myPosts.saveFailed');
         toast.error(message);
       })
       .finally(() => setLoading(false));
@@ -163,10 +165,10 @@ export const initHomePage = async () => {
   const categoryContainer = document.querySelector('[data-category-list]');
   if (!latestContainer) return;
 
-  latestContainer.innerHTML = '<p>Loading latest posts...</p>';
+  latestContainer.innerHTML = `<p>${t('home.loadingLatestPosts')}</p>`;
   if (heroContainer) heroContainer.innerHTML = renderHeroPost();
   if (categoryContainer)
-    categoryContainer.innerHTML = '<p>Loading categories...</p>';
+    categoryContainer.innerHTML = `<p>${t('home.loadingCategories')}</p>`;
 
   initModal();
   bindHomeInteractions();
@@ -186,11 +188,12 @@ export const initHomePage = async () => {
       categoryContainer.innerHTML = renderCategories(categories);
     }
   } catch (error) {
-    const message = error.details?.message || error.message || 'Request failed';
-    latestContainer.innerHTML = '<p>Unable to load latest posts.</p>';
+    const message =
+      error.details?.message || error.message || t('errors.requestFailed');
+    latestContainer.innerHTML = `<p>${t('home.unableLoadLatestPosts')}</p>`;
     if (heroContainer) heroContainer.innerHTML = renderHeroPost();
     if (categoryContainer)
-      categoryContainer.innerHTML = '<p>Unable to load categories.</p>';
+      categoryContainer.innerHTML = `<p>${t('home.unableLoadCategories')}</p>`;
     toast.error(message);
   }
 };
@@ -199,38 +202,38 @@ export const homePage = () => `
   <section id="home" class="hero">
     <div class="hero-grid">
       <div>
-        <h1 class="hero-title">Write, curate, and share stories with a calm rhythm.</h1>
+        <h1 class="hero-title">${t('home.heroTitle')}</h1>
         <p class="hero-desc">
-          The home page highlights fresh posts, hand-picked notes, and community signals without noise.
+          ${t('home.heroDesc')}
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#/posts">Start Reading</a>
+          <a class="btn btn-primary" href="#/posts">${t('home.startReading')}</a>
           <button class="btn btn-ghost" type="button" data-submit-story>
-            Submit a Story
+            ${t('home.submitStory')}
           </button>
         </div>
       </div>
       <div data-hero-post>
         <article class="hero-card">
-          <span class="hero-meta">Latest Post</span>
-          <h3>Loading...</h3>
-          <p>Fetching the newest story.</p>
+          <span class="hero-meta">${t('home.latestPost')}</span>
+          <h3>${t('home.loading')}</h3>
+          <p>${t('home.fetchingNewest')}</p>
         </article>
       </div>
     </div>
   </section>
 
   <section id="latest" class="section">
-    <h2 class="section-title">Latest Posts</h2>
+    <h2 class="section-title">${t('home.latestPosts')}</h2>
     <div class="grid-3" data-latest-posts>
-      <p>Loading latest posts...</p>
+      <p>${t('home.loadingLatestPosts')}</p>
     </div>
   </section>
 
   <section id="categories" class="section">
-    <h2 class="section-title">Browse Categories</h2>
+    <h2 class="section-title">${t('home.browseCategories')}</h2>
     <div class="category-list" data-category-list>
-      <p>Loading categories...</p>
+      <p>${t('home.loadingCategories')}</p>
     </div>
   </section>
 `;
