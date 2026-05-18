@@ -1,4 +1,5 @@
 import { getCategories } from '../modules/category/category.service.js';
+import { t } from '../utils/i18n.js';
 
 const escapeHtml = (value = '') =>
   String(value)
@@ -13,11 +14,11 @@ export const renderPostForm = ({ mode = 'create', post = null } = {}) => {
 
   return `
     <div class="modal__meta">
-      <span>${isEdit ? 'Edit Post' : 'Create Post'}</span>
+      <span>${isEdit ? t('postForm.editMeta') : t('postForm.createMeta')}</span>
     </div>
 
     <h3 id="modal-title" class="modal__title">
-      ${isEdit ? 'Update Post' : 'New Post'}
+      ${isEdit ? t('postForm.updateTitle') : t('postForm.newTitle')}
     </h3>
 
     <form
@@ -27,11 +28,11 @@ export const renderPostForm = ({ mode = 'create', post = null } = {}) => {
       ${isEdit ? `data-post-id="${post.id}"` : ''}
     >
       <label class="modal-field">
-        <span>Title</span>
+        <span>${t('postForm.title')}</span>
         <input
           type="text"
           name="title"
-          placeholder="Post title"
+          placeholder="${t('postForm.titlePlaceholder')}"
           value="${escapeHtml(post?.title || '')}"
           minlength="1"
           maxlength="200"
@@ -40,28 +41,28 @@ export const renderPostForm = ({ mode = 'create', post = null } = {}) => {
       </label>
 
       <label class="modal-field">
-        <span>Category</span>
+        <span>${t('postForm.category')}</span>
         <select name="categoryId" data-post-form-category>
-          <option value="">Loading categories...</option>
+          <option value="">${t('postForm.loadingCategories')}</option>
         </select>
       </label>
 
       <label class="modal-field">
-        <span>Content</span>
+        <span>${t('postForm.content')}</span>
         <textarea
           name="content"
           rows="6"
-          placeholder="Write your story"
+          placeholder="${t('postForm.contentPlaceholder')}"
           required
         >${escapeHtml(post?.content || '')}</textarea>
       </label>
 
       <div class="modal-actions">
         <button class="btn btn-ghost" type="button" data-modal-close>
-          Cancel
+          ${t('postForm.cancel')}
         </button>
         <button class="btn btn-primary" type="submit">
-          ${isEdit ? 'Update post' : 'Create post'}
+          ${isEdit ? t('postForm.updateButton') : t('postForm.createButton')}
         </button>
       </div>
     </form>
@@ -76,7 +77,7 @@ export const initPostFormCategories = async (currentCategoryId = null) => {
     const { items } = await getCategories({ page: 1, limit: 100 });
 
     const options = [
-      '<option value="">No category</option>',
+      `<option value="">${t('postForm.noCategory')}</option>`,
       ...items.map(
         (cat) =>
           `<option value="${cat.id}" ${Number(currentCategoryId) === cat.id ? 'selected' : ''}>
@@ -87,6 +88,6 @@ export const initPostFormCategories = async (currentCategoryId = null) => {
 
     select.innerHTML = options;
   } catch {
-    select.innerHTML = '<option value="">Unable to load categories</option>';
+    select.innerHTML = `<option value="">${t('postForm.unableLoadCategories')}</option>`;
   }
 };

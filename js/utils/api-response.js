@@ -1,4 +1,9 @@
-export const ensureSuccess = (payload, fallback = 'Request failed') => {
+import { t } from './i18n.js';
+
+export const ensureSuccess = (
+  payload,
+  fallback = t('errors.requestFailed')
+) => {
   if (payload?.status === 'success') {
     return payload.data;
   }
@@ -10,7 +15,7 @@ export const ensureSuccess = (payload, fallback = 'Request failed') => {
   throw error;
 };
 
-export const normalizeError = (payload, fallback = 'Something went wrong') => {
+export const normalizeError = (payload, fallback = t('errors.generic')) => {
   if (!payload) {
     return {
       message: fallback,

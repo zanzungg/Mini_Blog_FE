@@ -1,3 +1,5 @@
+import { t } from '../utils/i18n.js';
+
 let isConfirmBound = false;
 
 export const modalConfirm = () => `
@@ -8,8 +10,8 @@ export const modalConfirm = () => `
         <p class="modal__title" id="confirm-title"></p>
         <p class="modal__body" id="confirm-message"></p>
         <div class="modal-actions">
-          <button class="btn btn-ghost" type="button" data-confirm-cancel>Cancel</button>
-          <button class="btn btn-primary" type="button" data-confirm-ok>Confirm</button>
+          <button class="btn btn-ghost" type="button" data-confirm-cancel>${t('modal.cancel')}</button>
+          <button class="btn btn-primary" type="button" data-confirm-ok>${t('modal.confirm')}</button>
         </div>
       </div>
     </div>
@@ -18,7 +20,10 @@ export const modalConfirm = () => `
 
 let _resolveFn = null;
 
-export const openConfirm = ({ title = 'Are you sure?', message = '' } = {}) => {
+export const openConfirm = ({
+  title = t('modal.confirmTitle'),
+  message = '',
+} = {}) => {
   const modalEl = document.querySelector('[data-confirm-modal]');
   if (!modalEl) return Promise.resolve(false);
 

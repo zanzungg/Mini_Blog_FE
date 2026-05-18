@@ -10,6 +10,7 @@ import {
 import { getPostById } from '../modules/post/post.service.js';
 import { renderComments, renderCommentForm } from './comment.ui.js';
 import { escapeHtml } from './utils.js';
+import { t } from '../utils/i18n.js';
 
 let _isBound = false;
 
@@ -20,20 +21,23 @@ const refreshCommentList = async (postId) => {
   const listEl = section.querySelector('[data-comments-list]');
   if (!listEl) return;
 
-  listEl.innerHTML = '<p>Refreshing comments...</p>';
+  listEl.innerHTML = `<p>${t('comments.refreshing')}</p>`;
 
   try {
     const post = await getPostById(postId);
     const comments = post?.comments ?? [];
 
     const count = section.querySelector('.modal__section-title');
-    if (count) count.textContent = `Comments (${comments.length})`;
+    if (count)
+      count.textContent = t('comments.commentsTitle', {
+        count: comments.length,
+      });
 
     listEl.innerHTML = comments.length
       ? renderComments(comments)
-      : '<p class="modal__comment-empty">No comments yet. Be the first!</p>';
+      : `<p class="modal__comment-empty">${t('comments.noComments')}</p>`;
   } catch (error) {
-    listEl.innerHTML = '<p>Unable to refresh comments.</p>';
+    listEl.innerHTML = `<p>${t('comments.unableRefresh')}</p>`;
   }
 };
 
@@ -50,7 +54,7 @@ export const bindCommentInteractions = () => {
 
     const { isAuthenticated } = getAuthState();
     if (!isAuthenticated) {
-      toast.error('Please login to comment.');
+      toast.error(t('comments.loginToComment'));
       return;
     }
 
@@ -62,23 +66,23 @@ export const bindCommentInteractions = () => {
     const content = textarea?.value.trim() || '';
 
     if (!content) {
-      toast.error('Comment cannot be empty.');
+      toast.error(t('comments.commentEmpty'));
       return;
     }
     if (content.length > 2000) {
-      toast.error('Comment must not exceed 2000 characters.');
+      toast.error(t('comments.commentTooLong'));
       return;
     }
 
     const submitBtn = form.querySelector('button[type="submit"]');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Posting...';
+      submitBtn.textContent = t('comments.posting');
     }
 
     try {
       await createComment({ content, postId, parentId });
-      toast.success('Comment posted.');
+      toast.success(t('comments.commentPosted'));
 
       if (parentId) {
         const replyContainer = form.closest('[data-reply-container]');
@@ -90,12 +94,14 @@ export const bindCommentInteractions = () => {
       await refreshCommentList(postId);
     } catch (error) {
       const message =
-        error.details?.message || error.message || 'Failed to post comment';
+        error.details?.message || error.message || t('comments.failedToPost');
       toast.error(message);
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = parentId ? 'Reply' : 'Comment';
+        submitBtn.textContent = parentId
+          ? t('comments.reply')
+          : t('comments.comment');
       }
     }
   });
@@ -115,7 +121,7 @@ export const bindCommentInteractions = () => {
     if (replyBtn) {
       const { isAuthenticated } = getAuthState();
       if (!isAuthenticated) {
-        toast.error('Please login to reply.');
+        toast.error(t('comments.loginToReply'));
         return;
       }
 
@@ -133,7 +139,7 @@ export const bindCommentInteractions = () => {
       replyContainer.innerHTML = renderCommentForm({
         postId,
         parentId,
-        placeholder: 'Write a reply...',
+        placeholder: t('comments.writeReplyPlaceholder'),
       });
       commentEl.appendChild(replyContainer);
       replyContainer.querySelector('textarea')?.focus();
@@ -170,8 +176,8 @@ export const bindCommentInteractions = () => {
             maxlength="2000"
           >${escapeHtml(originalText)}</textarea>
           <div class="modal-actions">
-            <button class="btn btn-ghost" type="button" data-cancel-edit="${commentId}">Cancel</button>
-            <button class="btn btn-primary" type="submit">Save</button>
+            <button class="btn btn-ghost" type="button" data-cancel-edit="${commentId}">${t('comments.cancel')}</button>
+            <button class="btn btn-primary" type="submit">${t('comments.save')}</button>
           </div>
         </form>
       `;
@@ -195,8 +201,8 @@ export const bindCommentInteractions = () => {
       const postId = Number(section?.dataset.postId);
 
       const confirmed = await openConfirm({
-        title: 'Delete this comment?',
-        message: 'This action cannot be undone.',
+        title: t('comments.deleteConfirmTitle'),
+        message: t('comments.deleteConfirmMessage'),
       });
 
       if (!confirmed) return;
@@ -205,11 +211,11 @@ export const bindCommentInteractions = () => {
 
       try {
         await deleteComment(commentId);
-        toast.success('Comment deleted.');
+        toast.success(t('comments.commentDeleted'));
         await refreshCommentList(postId);
       } catch (error) {
         const message =
-          error.details?.message || error.message || 'Delete failed';
+          error.details?.message || error.message || t('comments.deleteFailed');
         toast.error(message);
         deleteBtn.disabled = false;
       }
@@ -230,31 +236,31 @@ export const bindCommentInteractions = () => {
     const postId = Number(section?.dataset.postId);
 
     if (!content) {
-      toast.error('Comment cannot be empty.');
+      toast.error(t('comments.commentEmpty'));
       return;
     }
     if (content.length > 2000) {
-      toast.error('Comment must not exceed 2000 characters.');
+      toast.error(t('comments.commentTooLong'));
       return;
     }
 
     const submitBtn = form.querySelector('button[type="submit"]');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Saving...';
+      submitBtn.textContent = t('comments.saving');
     }
 
     try {
       await updateComment(commentId, { content });
-      toast.success('Comment updated.');
+      toast.success(t('comments.commentUpdated'));
       await refreshCommentList(postId);
     } catch (error) {
       const message =
-        error.details?.message || error.message || 'Update failed';
+        error.details?.message || error.message || t('comments.updateFailed');
       toast.error(message);
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Save';
+        submitBtn.textContent = t('comments.save');
       }
     }
   });

@@ -104,13 +104,23 @@ const renderView = (hash) => {
   route.init(hash);
 };
 
-export const initRouter = () => {
-  const updateRoute = () => {
-    const hash = normalizeHash(window.location.hash || '#home');
-    renderView(hash);
-    setActiveLink(hash);
-  };
+let isRouterBound = false;
 
+const updateRoute = () => {
+  const hash = normalizeHash(window.location.hash || '#home');
+  renderView(hash);
+  setActiveLink(hash);
+};
+
+export const renderCurrentRoute = () => updateRoute();
+
+export const initRouter = () => {
   updateRoute();
+
+  if (isRouterBound) {
+    return;
+  }
+
   window.addEventListener('hashchange', updateRoute);
+  isRouterBound = true;
 };

@@ -23,6 +23,7 @@ import { renderMyPostCard } from '../../components/post.card.js';
 import { renderOwnerPostModal } from '../../components/post.modal.js';
 import { renderPagination } from '../../components/pagination.js';
 import { escapeHtml } from '../../components/utils.js';
+import { t } from '../../utils/i18n.js';
 
 let isProfileBound = false;
 let isMyPostsBound = false;
@@ -36,15 +37,15 @@ let myPostsState = {
 
 const validatePostForm = (title, content, mode) => {
   if (!title) {
-    return 'Title is required.';
+    return t('myPosts.titleRequired');
   }
   if (title.length > 200) {
-    return 'Title must not exceed 200 characters.';
+    return t('myPosts.titleMax');
   }
   if (!content) {
     return mode === 'create'
-      ? 'Content is required.'
-      : 'Content cannot be empty.';
+      ? t('myPosts.contentRequiredCreate')
+      : t('myPosts.contentRequiredEdit');
   }
   return null;
 };
@@ -57,12 +58,12 @@ const renderPostActions = (post) => {
       ${
         isDraft
           ? `
-        <button class="btn btn-ghost" type="button" data-post-edit="${post.id}">Edit</button>
-        <button class="btn btn-primary" type="button" data-post-publish="${post.id}">Publish</button>
+        <button class="btn btn-ghost" type="button" data-post-edit="${post.id}">${t('myPosts.edit')}</button>
+        <button class="btn btn-primary" type="button" data-post-publish="${post.id}">${t('myPosts.publish')}</button>
       `
           : ''
       }
-      <button class="btn btn-danger" type="button" data-post-delete="${post.id}">Delete</button>
+      <button class="btn btn-danger" type="button" data-post-delete="${post.id}">${t('myPosts.delete')}</button>
     </div>
   `;
 };
@@ -78,10 +79,10 @@ const renderProfileCard = () => {
       <section class="auth">
         <div class="auth-card">
           <div>
-            <h2 class="auth-title">Login to view your profile</h2>
-            <p class="auth-subtitle">Your account details will appear here.</p>
+            <h2 class="auth-title">${t('profile.loginToView')}</h2>
+            <p class="auth-subtitle">${t('profile.accountDetails')}</p>
           </div>
-          <a class="btn btn-primary" href="#/login">Go to login</a>
+          <a class="btn btn-primary" href="#/login">${t('profile.goToLogin')}</a>
         </div>
       </section>
     `;
@@ -91,20 +92,20 @@ const renderProfileCard = () => {
     <section class="section profile">
       <div class="profile-card">
         <div>
-          <h2 class="section-title">My Profile</h2>
-          <p class="posts-subtitle">Update your display name and review your email.</p>
+          <h2 class="section-title">${t('profile.myProfile')}</h2>
+          <p class="posts-subtitle">${t('profile.updateSubtitle')}</p>
         </div>
         <form class="profile-form" data-profile-form>
           <label class="profile-field">
-            <span>Name</span>
-            <input type="text" name="name" value="${escapeHtml(user.name || '')}" placeholder="Your name" 
+            <span>${t('profile.name')}</span>
+            <input type="text" name="name" value="${escapeHtml(user.name || '')}" placeholder="${t('profile.yourName')}" 
             minlength="2" maxlength="50" required />
           </label>
           <label class="profile-field">
-            <span>Email</span>
+            <span>${t('profile.email')}</span>
             <input type="email" name="email" value="${escapeHtml(user.email || '')}" readonly />
           </label>
-          <button class="btn btn-primary" type="submit">Save changes</button>
+          <button class="btn btn-primary" type="submit">${t('profile.saveChanges')}</button>
         </form>
       </div>
     </section>
@@ -112,7 +113,7 @@ const renderProfileCard = () => {
 };
 
 const renderMyPostsList = (posts) => {
-  if (!posts.length) return '<p>No posts match your current filters.</p>';
+  if (!posts.length) return `<p>${t('myPosts.noPostsFiltered')}</p>`;
   return posts.map(renderMyPostCard).join('');
 };
 
@@ -121,7 +122,7 @@ const updateMyPosts = async () => {
   const paginationEl = document.querySelector('[data-my-posts-pagination]');
   if (!listEl || !paginationEl) return;
 
-  listEl.innerHTML = '<p>Loading your posts...</p>';
+  listEl.innerHTML = `<p>${t('myPosts.loadingYourPosts')}</p>`;
   paginationEl.innerHTML = '';
 
   try {
@@ -135,8 +136,9 @@ const updateMyPosts = async () => {
       prefix: 'my-posts-page',
     });
   } catch (error) {
-    const message = error.details?.message || error.message || 'Request failed';
-    listEl.innerHTML = '<p>Unable to load your posts.</p>';
+    const message =
+      error.details?.message || error.message || t('errors.requestFailed');
+    listEl.innerHTML = `<p>${t('myPosts.unableLoadYourPosts')}</p>`;
     paginationEl.innerHTML = '';
     toast.error(message);
   }
@@ -157,45 +159,47 @@ const bindProfileInteractions = () => {
     const { user } = getAuthState();
 
     if (!user) {
-      toast.error('Please login to update your profile.');
+      toast.error(t('profile.loginToUpdate'));
       return;
     }
     if (!name) {
-      toast.error('Name is required.');
+      toast.error(t('profile.nameRequired'));
       return;
     }
     if (name.length < 2) {
-      toast.error('Name must be at least 2 characters.');
+      toast.error(t('profile.nameMin'));
       return;
     }
     if (name.length > 50) {
-      toast.error('Name must not exceed 50 characters.');
+      toast.error(t('profile.nameMax'));
       return;
     }
     if (name === (user.name || '').trim()) {
-      toast.error('No changes detected.');
+      toast.error(t('profile.noChanges'));
       return;
     }
 
     const setLoading = (isLoading) => {
       if (!submitButton) return;
       submitButton.disabled = isLoading;
-      submitButton.textContent = isLoading ? 'Saving...' : 'Save changes';
+      submitButton.textContent = isLoading
+        ? t('profile.saving')
+        : t('profile.saveChanges');
     };
 
     setLoading(true);
     updateUserProfile({ id: user.id, name })
       .then((updatedUser) => {
         if (!updatedUser) {
-          toast.error('Profile update returned no data.');
+          toast.error(t('profile.profileUpdateNoData'));
           return;
         }
         setAuthState({ user: { ...user, ...updatedUser } });
-        toast.success('Profile updated.');
+        toast.success(t('profile.profileUpdated'));
       })
       .catch((error) => {
         const message =
-          error.details?.message || error.message || 'Update failed';
+          error.details?.message || error.message || t('profile.updateFailed');
         toast.error(message);
       })
       .finally(() => setLoading(false));
@@ -214,11 +218,11 @@ const bindMyPostsInteractions = () => {
     if (!Number.isFinite(postId)) return;
     if (!document.querySelector('[data-my-posts-list]')) return;
 
-    openModal('<p>Loading post details...</p>');
+    openModal(`<p>${t('posts.loadingPostDetails')}</p>`);
     try {
       const post = await getPostById(postId);
       if (!post) {
-        openModal('<p>Post not found.</p>');
+        openModal(`<p>${t('posts.postNotFound')}</p>`);
         return;
       }
 
@@ -229,8 +233,8 @@ const bindMyPostsInteractions = () => {
       openModal(renderPostModalContent(post, comments));
     } catch (error) {
       const message =
-        error.details?.message || error.message || 'Request failed';
-      openModal('<p>Unable to load post details.</p>');
+        error.details?.message || error.message || t('errors.requestFailed');
+      openModal(`<p>${t('posts.unableLoadPostDetails')}</p>`);
       toast.error(message);
     }
   };
@@ -279,7 +283,7 @@ const bindMyPostsInteractions = () => {
     if (editTrigger) {
       event.stopPropagation();
       if (!_cachedPost) {
-        toast.error('Post data not available.');
+        toast.error(t('myPosts.postDataUnavailable'));
         return;
       }
       openModal(renderPostForm({ mode: 'edit', post: _cachedPost }));
@@ -293,26 +297,28 @@ const bindMyPostsInteractions = () => {
       event.stopPropagation();
       const postId = Number(publishTrigger.getAttribute('data-post-publish'));
       const confirmed = await openConfirm({
-        title: 'Publish this post?',
-        message: 'Once published, the post cannot be edited. Are you sure?',
+        title: t('myPosts.publishConfirmTitle'),
+        message: t('myPosts.publishConfirmMessage'),
       });
       if (!confirmed) return;
 
       publishTrigger.disabled = true;
-      publishTrigger.textContent = 'Publishing...';
+      publishTrigger.textContent = t('myPosts.publishLoading');
       publishPost(postId)
         .then(() => {
-          toast.success('Post published!');
+          toast.success(t('myPosts.postPublished'));
           closeModal();
           myPostsState = { ...myPostsState, page: 1 };
           updateMyPosts();
         })
         .catch((error) => {
           const message =
-            error.details?.message || error.message || 'Publish failed';
+            error.details?.message ||
+            error.message ||
+            t('myPosts.publishFailed');
           toast.error(message);
           publishTrigger.disabled = false;
-          publishTrigger.textContent = 'Publish';
+          publishTrigger.textContent = t('myPosts.publish');
         });
       return;
     }
@@ -323,27 +329,28 @@ const bindMyPostsInteractions = () => {
       event.stopPropagation();
       const postId = Number(deleteTrigger.getAttribute('data-post-delete'));
       const confirmed = await openConfirm({
-        title: 'Delete this post?',
-        message:
-          'This action cannot be undone. The post will be permanently deleted.',
+        title: t('myPosts.deleteConfirmTitle'),
+        message: t('myPosts.deleteConfirmMessage'),
       });
       if (!confirmed) return;
 
       deleteTrigger.disabled = true;
-      deleteTrigger.textContent = 'Deleting...';
+      deleteTrigger.textContent = t('myPosts.deleteLoading');
       deletePost(postId)
         .then(() => {
-          toast.success('Post deleted.');
+          toast.success(t('myPosts.postDeleted'));
           closeModal();
           myPostsState = { ...myPostsState, page: 1 };
           updateMyPosts();
         })
         .catch((error) => {
           const message =
-            error.details?.message || error.message || 'Delete failed';
+            error.details?.message ||
+            error.message ||
+            t('myPosts.deleteFailed');
           toast.error(message);
           deleteTrigger.disabled = false;
-          deleteTrigger.textContent = 'Delete';
+          deleteTrigger.textContent = t('myPosts.delete');
         });
       return;
     }
@@ -390,7 +397,9 @@ const bindMyPostsInteractions = () => {
     const setLoading = (isLoading) => {
       if (!submitButton) return;
       submitButton.disabled = isLoading;
-      submitButton.textContent = isLoading ? 'Saving...' : 'Save';
+      submitButton.textContent = isLoading
+        ? t('myPosts.saveLoading')
+        : t('myPosts.save');
     };
 
     setLoading(true);
@@ -406,14 +415,18 @@ const bindMyPostsInteractions = () => {
 
     action
       .then(() => {
-        toast.success(mode === 'create' ? 'Post created!' : 'Post updated!');
+        toast.success(
+          mode === 'create'
+            ? t('myPosts.postCreated')
+            : t('myPosts.postUpdated')
+        );
         myPostsState = { ...myPostsState, page: 1 };
         closeModal();
         updateMyPosts();
       })
       .catch((error) => {
         const message =
-          error.details?.message || error.message || 'Save failed';
+          error.details?.message || error.message || t('myPosts.saveFailed');
         toast.error(message);
       })
       .finally(() => setLoading(false));
@@ -444,10 +457,10 @@ export const myPostsPage = () => {
       <section class="auth">
         <div class="auth-card">
           <div>
-            <h2 class="auth-title">Login to manage your posts</h2>
-            <p class="auth-subtitle">Create, edit, and publish your stories after logging in.</p>
+            <h2 class="auth-title">${t('myPosts.loginToManage')}</h2>
+            <p class="auth-subtitle">${t('myPosts.loginSubtitle')}</p>
           </div>
-          <a class="btn btn-primary" href="#/login">Go to login</a>
+          <a class="btn btn-primary" href="#/login">${t('profile.goToLogin')}</a>
         </div>
       </section>
     `;
@@ -457,29 +470,29 @@ export const myPostsPage = () => {
     <section class="section my-posts">
       <div class="posts-header">
         <div>
-          <h2 class="section-title">My Posts</h2>
-          <p class="posts-subtitle">Manage drafts, published posts, and new ideas.</p>
+          <h2 class="section-title">${t('myPosts.myPosts')}</h2>
+          <p class="posts-subtitle">${t('myPosts.manageSubtitle')}</p>
         </div>
         <div class="posts-actions">
           <form class="posts-search" data-my-posts-search-form>
             <input
               class="posts-search__input"
               type="search"
-              placeholder="Search your posts"
+              placeholder="${t('myPosts.searchPlaceholder')}"
               data-my-posts-search
             />
-            <button class="btn btn-ghost" type="submit">Search</button>
+            <button class="btn btn-ghost" type="submit">${t('myPosts.searchButton')}</button>
           </form>
           <select class="posts-select" data-my-posts-status>
-            <option value="">All status</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
+            <option value="">${t('myPosts.allStatus')}</option>
+            <option value="published">${t('myPosts.published')}</option>
+            <option value="draft">${t('myPosts.draft')}</option>
           </select>
-          <button class="btn btn-primary" type="button" data-create-post>Create Post</button>
+          <button class="btn btn-primary" type="button" data-create-post>${t('myPosts.createPost')}</button>
         </div>
       </div>
       <div class="posts-grid" data-my-posts-list>
-        <p>Loading your posts...</p>
+        <p>${t('myPosts.loadingYourPosts')}</p>
       </div>
       <div class="pagination" data-my-posts-pagination></div>
     </section>
