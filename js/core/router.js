@@ -13,6 +13,10 @@ import {
   logoutPage,
   registerPage,
 } from '../modules/auth/auth.page.js';
+import {
+  maintenancePage,
+  initMaintenancePage,
+} from '../modules/maintenance/maintenance.page.js';
 
 const HASH_ALIASES = {
   '#': '#home',
@@ -38,6 +42,12 @@ const ROUTES = [
     exact: true,
     render: logoutPage,
     init: initLogoutPage,
+  },
+  {
+    pattern: '#/maintenance',
+    exact: true,
+    render: maintenancePage,
+    init: initMaintenancePage,
   },
   {
     pattern: '#/posts',

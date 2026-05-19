@@ -4,3 +4,5 @@ export const getApiBaseUrl = () => {
 };
 export const AUTH_STORAGE_KEY = 'mini_blog_auth';
 export const LOCALE_STORAGE_KEY = 'mini_blog_locale';
+export const MAINTENANCE_HASH = '#/maintenance';
+export const MAINTENANCE_MESSAGE_KEY = 'mini_blog_maintenance_message';
