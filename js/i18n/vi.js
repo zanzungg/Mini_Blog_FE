@@ -243,6 +243,12 @@ export const vi = {
     saving: 'Đang lưu...',
     postCreatedRedirect: 'Đã tạo bài viết! Đang chuyển đến Bài viết của tôi...',
   },
+  maintenance: {
+    title: 'Hệ thống đang bảo trì',
+    subtitle: 'Cảm ơn bạn đã kiên nhẫn.',
+    message: 'Chúng tôi đang bảo trì hệ thống. Vui lòng quay lại sau.',
+    retry: 'Thử lại',
+  },
   pagination: {
     prev: 'Trước',
     next: 'Sau',

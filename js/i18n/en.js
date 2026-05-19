@@ -242,6 +242,13 @@ export const en = {
     saving: 'Saving...',
     postCreatedRedirect: 'Post created! Redirecting to My Posts...',
   },
+  maintenance: {
+    title: 'We are under maintenance',
+    subtitle: 'Thanks for your patience.',
+    message:
+      'We are currently performing maintenance. Please check back later.',
+    retry: 'Retry',
+  },
   pagination: {
     prev: 'Prev',
     next: 'Next',
