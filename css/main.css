@@ -968,6 +968,10 @@ a {
   white-space: nowrap;
 }
 
+.maintenance-hidden {
+  display: none;
+}
+
 @media (max-width: 640px) {
   .modal__comment-auth {
     grid-template-columns: 1fr;
