@@ -105,6 +105,18 @@ const setActiveLink = (hash) => {
   });
 };
 
+const updateNavigationVisibility = (hash) => {
+  const navbar = document.querySelector('.nav-links');
+
+  if (!navbar) {
+    return;
+  }
+
+  const baseHash = hash.split('?')[0];
+
+  navbar.classList.toggle('maintenance-hidden', baseHash === '#/maintenance');
+};
+
 const renderView = (hash) => {
   const view = document.getElementById('view');
   if (!view) return;
@@ -120,6 +132,8 @@ const updateRoute = () => {
   const hash = normalizeHash(window.location.hash || '#home');
   renderView(hash);
   setActiveLink(hash);
+
+  updateNavigationVisibility(hash);
 };
 
 export const renderCurrentRoute = () => updateRoute();
