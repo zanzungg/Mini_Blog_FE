@@ -248,6 +248,9 @@ export const en = {
     message:
       'We are currently performing maintenance. Please check back later.',
     retry: 'Retry',
+    retrying: 'Checking...',
+    checkFailed: 'Unable to check maintenance status',
+    stillActive: 'Maintenance is still active. Please try again later.',
   },
   pagination: {
     prev: 'Prev',
