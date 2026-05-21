@@ -20,6 +20,7 @@ import {
 
 const HASH_ALIASES = {
   '#': '#home',
+  '#/': '#home',
 };
 
 const normalizeHash = (hash) => HASH_ALIASES[hash] ?? (hash || '#home');
