@@ -68,7 +68,7 @@ export const initMaintenancePage = () => {
     try {
       const result = await checkMaintenanceStatus();
       if (!result.enabled) {
-        window.location.hash = '#/';
+        window.location.hash = '#home';
         return;
       }
 
