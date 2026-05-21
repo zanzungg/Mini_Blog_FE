@@ -248,6 +248,9 @@ export const vi = {
     subtitle: 'Cảm ơn bạn đã kiên nhẫn.',
     message: 'Chúng tôi đang bảo trì hệ thống. Vui lòng quay lại sau.',
     retry: 'Thử lại',
+    retrying: 'Đang kiểm tra...',
+    checkFailed: 'Không thể kiểm tra trạng thái bảo trì',
+    stillActive: 'Hệ thống vẫn đang bảo trì. Vui lòng thử lại sau.',
   },
   pagination: {
     prev: 'Trước',
